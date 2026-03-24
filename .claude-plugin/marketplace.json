@@ -1,0 +1,19 @@
+{
+  "name": "siroc-cortex",
+  "owner": {
+    "name": "SIROC Team"
+  },
+  "metadata": {
+    "description": "SIROC Cortex plugin marketplace",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "asana-workflow",
+      "source": "./plugins/asana-workflow",
+      "description": "End-to-end Asana-driven development workflow: from ticket to shipped PR with automated task tracking, git management, and team communication",
+      "version": "1.0.0"
+    }
+  ]
+}
