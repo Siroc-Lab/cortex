@@ -1,0 +1,23 @@
+# Claude Code
+.claude/settings.local.json
+.claude/todos.json
+.claude/memory/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Tasks (local working files)
+tasks/
+
+# Docs
+docs/
