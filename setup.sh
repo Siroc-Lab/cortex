@@ -214,7 +214,7 @@ if [ -n "${ASANA_PERSONAL_ACCESS_TOKEN:-}" ]; then
       [ -z "$ACCT_NAME" ] && break
 
       # Uppercase and prefix
-      ACCT_VAR="ASANA_TOKEN_$(echo "$ACCT_NAME" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9_' '_')"
+      ACCT_VAR="ASANA_TOKEN_$(printf "%s" "$ACCT_NAME" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9_' '_')"
 
       if exists_in_profile "$ACCT_VAR"; then
         warn "${ACCT_VAR} already exists in ${PROFILE} — skipping"
