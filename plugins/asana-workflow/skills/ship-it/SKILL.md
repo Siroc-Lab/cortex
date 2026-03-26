@@ -1,6 +1,7 @@
 ---
 name: ship-it
-version: 0.1.0
+metadata:
+  version: 0.1.0
 description: >
   Thin orchestrator that ships completed work by calling sub-skills in sequence: pre-ship-check,
   work-summary, create-pr, and asana-api. Contains no domain logic — all real work

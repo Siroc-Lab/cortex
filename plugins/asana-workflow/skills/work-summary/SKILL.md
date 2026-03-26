@@ -1,6 +1,7 @@
 ---
 name: work-summary
-version: 0.1.0
+metadata:
+  version: 0.1.0
 description: >
   This skill should be used when the user says "summarize my work", "what did I do", "session recap",
   "standup notes", "handoff", "write a summary", "what changed", "wrap up summary", "give me a recap",

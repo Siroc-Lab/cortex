@@ -1,6 +1,7 @@
 ---
 name: fix-bug
-version: 0.1.0
+metadata:
+  version: 0.1.0
 description: >
   Handles the full bug-fix lifecycle when start-task routes a Bug category Asana task.
   Orchestrates root cause investigation (superpowers:systematic-debugging), a TDD hard gate
