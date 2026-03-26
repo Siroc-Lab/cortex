@@ -47,6 +47,24 @@ plugins/
       asana-api/          # Asana API operations + spec reference
 ```
 
+## Versioning
+
+Plugin versions are bumped via the **Bump Plugin Version** GitHub Actions workflow.
+
+Go to **Actions → Bump Plugin Version → Run workflow** and fill in:
+
+| Input | Description |
+|-------|-------------|
+| `plugin` | Plugin folder name (e.g. `asana-workflow`) |
+| `level` | `patch` · `minor` · `major` |
+
+The workflow updates `plugin.json` and the matching entry in `marketplace.json`, tags the commit `<plugin>@<version>`, and pushes directly to the branch it was triggered from.
+
+**Semver guide:**
+- `patch` — bug fixes, copy changes, non-breaking skill tweaks (`1.0.0` → `1.0.1`)
+- `minor` — new skills or backwards-compatible changes (`1.0.0` → `1.1.0`)
+- `major` — breaking changes, removed skills, renamed inputs (`1.0.0` → `2.0.0`)
+
 ## License
 
 Proprietary - SIROC Team
