@@ -2,11 +2,10 @@
 name: fix-bug
 version: 0.1.0
 description: >
-  This skill should be used when start-task routes a Bug category Asana task. Orchestrates
-  the full bug-fix lifecycle: root cause investigation (superpowers:systematic-debugging),
-  TDD hard gate to prevent recurrence (superpowers:test-driven-development), and shipping
-  (ship-it). Never invoked directly by the user — always called from start-task with full
-  task context.
+  Handles the full bug-fix lifecycle when start-task routes a Bug category Asana task.
+  Orchestrates root cause investigation (superpowers:systematic-debugging), a TDD hard gate
+  to prevent recurrence (superpowers:test-driven-development), and shipping (ship-it).
+  Always called from start-task with full task context; never invoked directly.
 ---
 
 # Fix Bug
@@ -50,6 +49,8 @@ with these explicit requirements:
 **If the gate cannot be satisfied** (tests stay red, no meaningful test can be written):
 - Do NOT proceed to Step 3
 - Return to `superpowers:systematic-debugging` Phase 1 — the fix is not considered complete
+- If the gate still cannot be satisfied after a second pass, halt and surface the blocker
+  to the user with a summary of what was attempted
 
 ## Step 3: Ship
 
