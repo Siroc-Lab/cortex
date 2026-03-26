@@ -34,13 +34,13 @@ When the user says something like "use my work Asana account", "switch to the cl
 
 1. Run `env | grep ^ASANA_TOKEN_` to discover available named tokens.
 2. Match the user's phrasing conversationally against the discovered names (e.g., "work" → `ASANA_TOKEN_WORK`, "client x" → `ASANA_TOKEN_CLIENT_X`).
-3. If exactly one match: set it as the active token override in conversation context. Confirm: "Switched to ASANA_TOKEN_WORK for this session."
+3. If exactly one match: set it as the active token override in conversation context. Confirm: "Switched to ASANA_TOKEN_WORK for this session." (replace `ASANA_TOKEN_WORK` with the actual matched variable name)
 4. If multiple plausible matches: list the options and ask the user which to use.
 5. If no match found: report clearly (e.g., "No ASANA_TOKEN_* var found matching 'work'. Available: ASANA_TOKEN_CLIENT_X") and fall back to the default.
 
 **Error handling for the resolved token:**
 
-- If the resolved var is not set in the environment: report it and fall back to `$ASANA_PERSONAL_ACCESS_TOKEN`.
+- If the resolved token value is empty: report it (e.g., "ASANA_TOKEN_WORK is set but empty") and fall back to `$ASANA_PERSONAL_ACCESS_TOKEN`.
 - If an API call returns 401 on the switched token: report "ASANA_TOKEN_WORK appears invalid or expired (HTTP 401)." and offer to fall back to the default.
 
 The active token override is session-only — nothing is written to disk.
@@ -127,7 +127,7 @@ Asana URLs come in several formats. The task GID is always a numeric segment:
 
 ## Error Handling
 
-- **401 Unauthorized** — Token expired or invalid. Guide user to regenerate.
+- **401 Unauthorized** — If using a named override token (e.g., `ASANA_TOKEN_WORK`), follow the fallback logic in Token Resolution above. If using the default `$ASANA_PERSONAL_ACCESS_TOKEN`, guide the user to regenerate at https://app.asana.com/0/my-apps.
 - **403 Forbidden** — User lacks access to the resource.
 - **404 Not Found** — Invalid GID or deleted resource.
 - **429 Rate Limited** — Back off and retry after the `Retry-After` header.
