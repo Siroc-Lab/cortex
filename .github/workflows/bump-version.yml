@@ -21,7 +21,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
 
     steps:
       - name: Checkout
@@ -84,32 +83,21 @@ jobs:
             echo "new_version=$NEW_VERSION"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Commit, push, and open PR
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Commit and push
         run: |
           PLUGIN="${{ github.event.inputs.plugin }}"
           OLD="${{ steps.bump.outputs.old_version }}"
           NEW="${{ steps.bump.outputs.new_version }}"
-          BRANCH="release/${PLUGIN}@${NEW}"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git checkout -b "$BRANCH"
 
           git add "plugins/${PLUGIN}/.claude-plugin/plugin.json" \
                   .claude-plugin/marketplace.json
 
           git commit -m "chore(${PLUGIN}): bump version ${OLD} → ${NEW}"
           git tag "${PLUGIN}@${NEW}"
-          git push origin "$BRANCH" --follow-tags
-
-          gh pr create \
-            --title "chore(${PLUGIN}): bump version ${OLD} → ${NEW}" \
-            --body "Bumps **${PLUGIN}** from \`${OLD}\` to \`${NEW}\` (${{ github.event.inputs.level }} release)." \
-            --base "${{ github.ref_name }}" \
-            --head "$BRANCH"
+          git push origin HEAD --follow-tags
 
       - name: Summary
         run: |
