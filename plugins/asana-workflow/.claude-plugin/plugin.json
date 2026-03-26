@@ -4,15 +4,5 @@
   "version": "1.0.0",
   "author": {
     "name": "SIROC Team"
-  },
-  "skills": [
-    "skills/asana-api",
-    "skills/create-pr",
-    "skills/fix-bug",
-    "skills/git-check",
-    "skills/pre-ship-check",
-    "skills/ship-it",
-    "skills/start-task",
-    "skills/work-summary"
-  ]
+  }
 }

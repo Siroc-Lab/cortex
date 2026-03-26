@@ -1,7 +1,6 @@
 ---
 name: pre-ship-check
-metadata:
-  version: 0.1.0
+version: 0.1.0
 description: >
   This skill should be used when the user says "am I ready to ship", "pre-flight check",
   "check before PR", "ready to merge", "pre-ship check", "can I ship this", "is this ready",

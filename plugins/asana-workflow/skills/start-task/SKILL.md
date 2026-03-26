@@ -1,7 +1,6 @@
 ---
 name: start-task
-metadata:
-  version: 0.1.0
+version: 0.1.0
 description: >
   This skill should be used when the user provides an Asana task URL and wants to begin working on it,
   or says things like "start task", "work on this", "pick up this ticket", "begin this task", or pastes

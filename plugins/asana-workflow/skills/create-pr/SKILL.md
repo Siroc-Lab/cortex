@@ -1,7 +1,6 @@
 ---
 name: create-pr
-metadata:
-  version: 0.1.0
+version: 0.1.0
 description: >
   This skill should be used when the user says "create a PR", "open a pull request", "make a PR",
   "push and create PR", "open PR for this", "submit a PR", "PR this branch", "let's get this reviewed",

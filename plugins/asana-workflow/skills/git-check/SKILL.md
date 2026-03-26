@@ -1,7 +1,6 @@
 ---
 name: git-check
-metadata:
-  version: 0.1.0
+version: 0.1.0
 description: >
   This skill should be used when the user says "check git status", "is my branch clean",
   "git check", "any uncommitted changes", "check before commit", or when another skill needs
