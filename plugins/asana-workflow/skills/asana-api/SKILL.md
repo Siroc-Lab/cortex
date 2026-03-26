@@ -1,5 +1,6 @@
 ---
 name: asana-api
+version: 0.1.0
 description: >
   Operate with Asana API - create, read, update tasks, projects, users, and all Asana resources
   using the node-asana SDK or direct REST calls. Use when the user mentions Asana tasks, projects,
