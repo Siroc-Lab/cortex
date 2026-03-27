@@ -31,19 +31,39 @@ jobs:
 
           plugin_versions = {}
           for pf in plugin_files:
-              with open(pf) as f:
-                  data = json.load(f)
+              try:
+                  with open(pf) as f:
+                      data = json.load(f)
+              except json.JSONDecodeError as e:
+                  print(f"ERROR: malformed JSON in {pf}: {e}")
+                  sys.exit(1)
               plugin_versions[data['name']] = data['version']
 
-          with open('.claude-plugin/marketplace.json') as f:
-              marketplace = json.load(f)
+          try:
+              with open('.claude-plugin/marketplace.json') as f:
+                  marketplace = json.load(f)
+          except json.JSONDecodeError as e:
+              print(f"ERROR: malformed JSON in .claude-plugin/marketplace.json: {e}")
+              sys.exit(1)
 
+          marketplace_names = {p.get('name') for p in marketplace.get('plugins', [])}
+
+          for name in plugin_versions:
+              if name not in marketplace_names:
+                  print(f"WARNING: plugin '{name}' found in plugin.json but not in marketplace.json")
+
+          updated = set()
           for plugin in marketplace.get('plugins', []):
               name = plugin.get('name')
               if name in plugin_versions:
                   old = plugin.get('version')
                   plugin['version'] = plugin_versions[name]
+                  updated.add(name)
                   print(f"  {name}: {old} -> {plugin_versions[name]}")
+
+          for name in marketplace_names:
+              if name not in updated:
+                  print(f"WARNING: marketplace plugin '{name}' has no matching plugin.json")
 
           with open('.claude-plugin/marketplace.json', 'w') as f:
               json.dump(marketplace, f, indent=2)
