@@ -1,18 +1,13 @@
 ---
 name: log-task
 description: >
-  Creates an Asana task from work discovered or completed in the current conversation.
-  Use when the user says things like "log this as a task", "create an Asana ticket for this",
+  Use when the user wants to create a new Asana task from the current conversation — before
+  or after doing the work. Triggers: "log this as a task", "create an Asana ticket for this",
   "capture this in Asana", "I want to track this", "let's create a ticket for what we just found",
-  "add this to the backlog", "log this bug", "create a task before we start", or after discovering
-  an issue together and wanting to formalize it before or after fixing it. Handles two variants:
-  (1) plan-only — create task then hand off to start-task to begin work, and
-  (2) fix-done — work is already complete, create task then hand off to ship-it via a clean
-  git worktree. Always invoke this skill when the user's intent is clearly to create a new
-  Asana task from the current conversation — even for short phrases like "quick asana ticket",
-  "log this to asana", or "asana task for this". Do NOT trigger on generic logging requests
-  ("log this error", "console.log", "log to Sentry") or on requests that reference an existing
-  Asana task URL (those go to start-task or ship-it).
+  "add this to the backlog", "log this bug", "create a task before we start", "quick asana ticket",
+  "log this to asana", "asana task for this", or after discovering and fixing an issue together.
+  Do NOT trigger on generic logging requests ("log this error", "console.log", "log to Sentry")
+  or on requests that reference an existing Asana task URL (those go to start-task or ship-it).
 ---
 
 # Log Task
@@ -89,7 +84,7 @@ I'll save them to ~/.claude/asana-workflow/<project-key>.json (not in the repo).
 Fetch the custom field definitions from the Sprint project. This is how you find out what fields exist and what values are valid — field names and enum options vary across projects, so never hardcode them.
 
 ```bash
-curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   "https://app.asana.com/api/1.0/projects/<sprint_project_gid>/custom_field_settings\
 ?opt_fields=custom_field.gid,custom_field.name,custom_field.type,\
 custom_field.enum_options,custom_field.enum_options.gid,custom_field.enum_options.name"
@@ -112,7 +107,7 @@ If a field has no match in the project, skip it gracefully — note it in the dr
 Also fetch the current user's GID for default assignment:
 
 ```bash
-curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   "https://app.asana.com/api/1.0/users/me?opt_fields=gid,name,email"
 ```
 
@@ -176,34 +171,30 @@ Create once confirmed. Use the `asana-api` skill patterns.
 
 ### 6a. Create the task
 
+**Do NOT include custom fields in this call** — the Asana API rejects them until the task belongs to a project. Set them in step 6d after adding to projects.
+
 ```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "data": {
       "name": "<title>",
       "notes": "<description>",
       "workspace": "<workspace_gid>",
-      "assignee": "<user_gid or null>",
-      "custom_fields": {
-        "<priority_gid>": "<selected_enum_gid>",
-        "<sizing_gid>": "<selected_enum_gid>",
-        "<estimate_gid>": "<selected_enum_gid>",
-        "<product_status_gid>": "<assigned_enum_gid>"
-      }
+      "assignee": "<user_gid or null>"
     }
   }' \
   "https://app.asana.com/api/1.0/tasks"
 ```
 
-Only include custom fields that were successfully discovered. Save the returned `task_gid`.
+Save the returned `task_gid`.
 
 For `assignee`: send `"assignee": null` explicitly (not omitting the field) for Variant A. Omitting it vs sending null behaves the same in the Asana API, but being explicit avoids ambiguity.
 
 ### 6b. Add to Sprint project
 
 ```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"project":"<sprint_project_gid>"}}' \
   "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
@@ -212,18 +203,38 @@ curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
 ### 6c. Add to Backlog project
 
 ```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"data":{"project":"<backlog_project_gid>"}}' \
   "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
 ```
 
-### 6d. Fetch the task ID field
+### 6d. Set custom fields, then fetch the task ID
 
-After adding to projects, re-fetch the task to get the auto-assigned ID field (e.g., `MT251-182`). This is set by Asana automation once the task is in the right project:
+Now that the task is in a project, set custom fields via PUT:
 
 ```bash
-curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
+curl -s -X PUT -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": {
+      "custom_fields": {
+        "<priority_gid>": "<selected_enum_gid>",
+        "<sizing_gid>": "<selected_enum_gid>",
+        "<estimate_gid>": "<selected_enum_gid>",
+        "<product_status_gid>": "<assigned_enum_gid>"
+      }
+    }
+  }' \
+  "https://app.asana.com/api/1.0/tasks/<task_gid>"
+```
+
+Only include custom fields that were successfully discovered.
+
+Then re-fetch the task to get the auto-assigned ID field (e.g., `MT251-182`). This is set by Asana automation once the task is in the right project:
+
+```bash
+curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   "https://app.asana.com/api/1.0/tasks/<task_gid>?opt_fields=custom_fields,custom_fields.name,custom_fields.display_value,custom_fields.type"
 ```
 
@@ -330,10 +341,22 @@ git add <changed_files>
 git commit -m "<task_id> :: <task-title-slug>"
 ```
 
+**Do NOT push.** Do NOT create a PR. Do NOT update Asana status. ship-it owns all of these — do them manually and you will duplicate work or skip required checks.
+
 #### 7b-5. Invoke ship-it in the worktree context
 
+**This step is mandatory. Never skip it, even if the branch looks ready or the push feels like a natural stopping point.**
+
+ship-it owns everything after the commit:
+- Pushing the branch to origin
+- Creating the PR
+- Pre-ship checks
+- Final Asana status update
+
+log-task's job ends at the commit. Hand off immediately.
+
 Tell the user:
-> "Changes are on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Handing off to ship-it."
+> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Handing off to ship-it for push, PR, and Asana update."
 
 Invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
 - Task GID: `<task_gid>`
