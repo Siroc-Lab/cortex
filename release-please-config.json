@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    "plugins/asana-workflow": {
+      "release-type": "simple",
+      "component": "asana-workflow",
+      "version-file": "plugins/asana-workflow/.claude-plugin/plugin.json"
+    }
+  }
+}
