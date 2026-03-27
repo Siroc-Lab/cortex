@@ -1,0 +1,65 @@
+name: Sync Marketplace Versions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'plugins/**/.claude-plugin/plugin.json'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Sync marketplace.json from all plugin.json files
+        run: |
+          python3 - <<'EOF'
+          import json, glob, sys
+
+          plugin_files = sorted(glob.glob('plugins/*/.claude-plugin/plugin.json'))
+          if not plugin_files:
+              print("No plugin.json files found")
+              sys.exit(1)
+
+          plugin_versions = {}
+          for pf in plugin_files:
+              with open(pf) as f:
+                  data = json.load(f)
+              plugin_versions[data['name']] = data['version']
+
+          with open('.claude-plugin/marketplace.json') as f:
+              marketplace = json.load(f)
+
+          for plugin in marketplace.get('plugins', []):
+              name = plugin.get('name')
+              if name in plugin_versions:
+                  old = plugin.get('version')
+                  plugin['version'] = plugin_versions[name]
+                  print(f"  {name}: {old} -> {plugin_versions[name]}")
+
+          with open('.claude-plugin/marketplace.json', 'w') as f:
+              json.dump(marketplace, f, indent=2)
+              f.write('\n')
+
+          print("marketplace.json updated")
+          EOF
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "No changes to marketplace.json"
+          else
+            git add .claude-plugin/marketplace.json
+            git commit -m "chore: sync marketplace versions"
+            git push
+          fi
