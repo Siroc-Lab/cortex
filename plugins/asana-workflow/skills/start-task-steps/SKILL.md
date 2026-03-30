@@ -229,7 +229,32 @@ Skip this step if Step 6 found an existing branch to resume — go straight to w
        > 2. Go straight to implementation (`feature-dev:feature-dev`)"
        Wait for explicit answer before routing. No default assumed.
    - **Category missing** → Prompt: "Is this a bug fix or a feature?" then apply the routing above.
-3. Write checkpoint: Step 11 → `[x]` | `completed` | Auto `[ ]` if user input was needed, `[x]` otherwise | Comment: `fix-bug`, `brainstorm`, or `feature-dev`. Update frontmatter: `workflow`.
+3. Include this in the handoff context passed to the downstream skill:
+   > "When this workflow is complete, return to `start-task-steps` Step 12 and invoke `ship-it`. Do not end the session — there is one more step."
+4. Write checkpoint: Step 11 → `[x]` | `completed` | Auto `[ ]` if user input was needed, `[x]` otherwise | Comment: `fix-bug`, `brainstorm`, or `feature-dev`. Update frontmatter: `workflow`.
+
+---
+
+### Step 12: Ship It
+
+**This step runs as soon as the development workflow signals completion** — `fix-bug` after the fix is verified, `feature-dev` at Phase 7 (Summary), or `superpowers:brainstorming` when the design is done. Do not wait for the user to ask.
+
+1. Open checkpoint: set Step 12 → `in_progress`, Attempts +1, update `last_updated`.
+2. Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
+
+   | What | Source |
+   |------|--------|
+   | Task GID | Step 1 (checkpoint frontmatter) |
+   | Task URL | `$ARGUMENTS` / checkpoint frontmatter |
+   | Task ID | Step 2 (checkpoint frontmatter: `task_id`) |
+   | Branch name | Step 7 (checkpoint frontmatter: `branch`) |
+   | Draft PR URL | Step 8 (checkpoint comment) |
+   | Sprint project GID | Step 2 (task memberships) |
+   | Section mappings | Step 9 (discovered when moving to "In Progress") |
+
+   `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
+
+3. Write checkpoint: Step 12 → `[x]` | `completed` | Auto `[x]` | Comment: `Shipped: <pr-url>`.
 
 ---
 
@@ -241,7 +266,7 @@ Set the current step's State → `blocked` in the checkpoint before doing anythi
 
 ## Important Notes
 
-- This skill starts work. It does not ship it. Shipping is handled by `ship-it`.
+- This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done (Step 12).
 - Include the task ID in branch names and commit messages for traceability.
 - Route all Asana API calls through the `asana-api` skill — no raw curl.
 - If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.

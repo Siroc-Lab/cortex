@@ -71,6 +71,7 @@ last_updated: "<iso8601>"
 | 9. Move to In Progress | [ ] | | 0 | — | [x] |
 | 10. Post Start Comment | [ ] | | 0 | — | [x] |
 | 11. Route to Workflow | [ ] | | 0 | — | [ ] |
+| 12. Ship It | [ ] | | 0 | — | [x] |
 
 ## Notes
 ```
@@ -108,6 +109,7 @@ last_updated: 2026-03-30T10:14:32Z
 | 9. Move to In Progress | [ ] | | 0 | — | [x] |
 | 10. Post Start Comment | [ ] | | 0 | — | [x] |
 | 11. Route to Workflow | [ ] | | 0 | — | [ ] |
+| 12. Ship It | [ ] | | 0 | — | [x] |
 
 ## Notes
 ```
@@ -178,6 +180,7 @@ When a step is **blocked**:
 | 9. Move to In Progress | `Moved` or `Already in progress` or `Failed: <reason>` |
 | 10. Post Start Comment | `Posted` or `Skipped (duplicate)` |
 | 11. Route to Workflow | `fix-bug`, `brainstorm`, or `feature-dev` |
+| 12. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates
 

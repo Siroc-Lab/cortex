@@ -68,7 +68,7 @@ If a branch or PR exists, offer to resume or start fresh. If resuming, check out
 
 After fetching remote refs, check for `.claude/checkpoints/<task-id>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
 
-On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint.
+On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint. The same Step 11 ship-it handoff applies after the workflow completes.
 
 ### Step 6b: Ask About Worktree (BLOCKING)
 
@@ -148,13 +148,36 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
+**Handoff instruction:** When passing context to the downstream skill, include this explicitly:
+> "When this workflow is complete, return to `start-task` Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
+
+This ensures the downstream skill knows control must return here rather than closing out.
+
+### Step 11: Ship It
+
+**This step runs as soon as the development workflow signals completion** — `feature-dev` at Phase 7 (Summary), or `systematic-debugging` after confirming the fix is verified. Do not wait for the user to ask.
+
+Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
+
+| What | Source |
+|------|--------|
+| Task GID | Extracted in Step 1 |
+| Task URL | Provided in `$ARGUMENTS` |
+| Task ID | From task custom fields (Step 2) |
+| Branch name | Created in Step 7 |
+| Draft PR URL | Captured in Step 8 |
+| Sprint project GID | From task memberships (Step 2) |
+| Section mappings | Discovered when moving to "In Progress" (Step 9) |
+
+`ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
+
 ## Pause Flow
 
 Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any phase of work. Commits WIP, drafts a blocking question for user approval, posts to Asana, saves a checkpoint, and pushes. See **`references/checkpoints.md`** for the full pause flow, checkpoint file format, and trigger phrases.
 
 ## Important Notes
 
-- This skill starts work. It does not ship it. Shipping is handled by `ship-it`.
+- This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done.
 - Include the task ID in branch names and commit messages for traceability.
 - Route all Asana API calls through the `asana-api` skill — no raw curl.
 - If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.
