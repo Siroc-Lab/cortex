@@ -1,13 +1,16 @@
 ---
 name: start-task-steps
 description: >
-  This skill should be used when the user provides an Asana task URL and wants to begin working on it,
-  or says things like "start task", "work on this", "pick up this ticket", "begin this task", or pastes
-  an Asana URL with intent to start development. Also handles pausing blocked work ("park this",
-  "I'm blocked", "pause task", "put this on hold") and resuming paused tasks ("resume task",
-  "pick up where I left off", "continue [task-id]"). This is the entry point for the company's
-  development workflow — from ticket to code, with mandatory checkpoint tracking at every step.
-argument-hint: <asana-task-url>
+  This skill should be used when the user provides an Asana task URL and wants to begin working on it
+  with full step-by-step checkpoint tracking — "start task", "work on this", "pick up this ticket",
+  "let's start on [task-id]", "jump on this", "begin this task", or pastes an Asana URL with intent
+  to start development. Orchestrates the full lifecycle: validates sprint-readiness, sets up the branch
+  and draft PR, routes to the right development workflow (feature-dev, fix-bug, or brainstorm), and
+  ships via ship-it when done. Every step writes a checkpoint file so work can be paused and resumed
+  at any point. Also handles pausing ("park this", "I'm blocked", "pause task", "put this on hold")
+  and resuming ("resume task", "pick up where I left off", "continue [task-id]"). Prefer this variant
+  over start-task for long, complex, or interruptible tasks.
+argument-hint: <asana-task-url> [brainstorm|feature-dev]
 ---
 
 # Start Task (Steps)
@@ -36,11 +39,13 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc`. If missing, stop and guide setup:
   > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
   > Get token from: https://app.asana.com/0/my-apps
-- Access to `feature-dev:feature-dev` and `superpowers:systematic-debugging` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (required if using the `brainstorm` workflow for non-bug tasks)
+- `fix-bug` is bundled — no external dependency for bug tasks
 - The `asana-api` skill for all Asana API operations
 
 ## Reference Files
 
+- **`references/skill-dependencies.md`** — External plugin dependencies, install commands, check instructions
 - **`references/checkpoints.md`** — Checkpoint file format, step update rules, pause/resume flows
 - **`references/validation-rules.md`** — Sprint-readiness checks, failure display, skip rules
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
@@ -53,6 +58,12 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 ### Step 0: Initialize Checkpoint
 
 **This is the very first action. Do not call any API or run any git command before this.**
+
+0. Check external skill dependencies before creating the checkpoint. These are **not bundled** with this plugin:
+   - **`feature-dev@claude-plugins-official`** — required for non-bug tasks using the `feature-dev` workflow
+   - **`superpowers@claude-plugins-official`** — required for Bug tasks (`fix-bug` uses `systematic-debugging`) and for non-bug tasks using the `brainstorm` workflow
+
+   If either is missing, warn the user and ask whether to install now or continue. This is an **advisory blocking step** — wait for the user's answer before proceeding. See **`references/skill-dependencies.md`** for check instructions, install commands, and warning message templates.
 
 1. Extract the task GID from the URL in `$ARGUMENTS`. See `references/asana-patterns.md` for URL formats. If no URL is provided, prompt for it now.
 
@@ -123,12 +134,46 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 
 ---
 
+### Step 6b: Ask About Worktree (BLOCKING)
+
+Skip this step if Step 6 found an existing branch to resume.
+
+1. Open checkpoint: set Step 6b → `in_progress`, Attempts +1, update `last_updated`.
+2. Ask the user whether to use a git worktree. This is a **blocking** question — wait for an explicit answer before proceeding.
+
+   > Would you like to work in a git worktree (isolated copy of the repo) or directly in the current directory?
+   > - **Worktree** _(recommended for parallel work — keeps main directory clean)_
+   > - **Current directory**
+
+   If the user chooses worktree, use `EnterWorktree` to create an isolated copy. The branch will be created inside the worktree in Step 7.
+
+3. Write checkpoint: Step 6b → `[x]` | `completed` | Auto `[ ]` | Comment: `worktree` or `current directory`.
+
+---
+
+### Step 6c: Confirm Base Branch (BLOCKING)
+
+Skip this step if Step 6 found an existing branch to resume.
+
+1. Open checkpoint: set Step 6c → `in_progress`, Attempts +1, update `last_updated`.
+2. Ask the user which branch to base the new branch on. This is a **blocking** question — wait for an explicit answer before proceeding.
+
+   > Which branch should `<task-id>/<slug>` be based on?
+   > - **main** _(default — latest stable base)_
+   > - Another branch _(enter branch name)_
+
+   Default to `main` only after the user confirms. Record the chosen base branch for Step 7.
+
+3. Write checkpoint: Step 6c → `[x]` | `completed` | Auto `[ ]` | Comment: `<base-branch>`.
+
+---
+
 ### Step 7: Create Feature Branch
 
 Skip this step if Step 6 found an existing branch to resume — go straight to writing the checkpoint for Step 7 as `completed | Skipped: resumed existing branch`.
 
 1. Open checkpoint: set Step 7 → `in_progress`, Attempts +1, update `last_updated`.
-2. Create a branch using the task ID and a slug from the task name. Default to `main` as base. Inform (do not ask) when creating. See `references/git-workflow.md` for commands and naming convention.
+2. Create a branch using the task ID and a slug from the task name. Use the **base branch confirmed in Step 6c** (not assumed `main`). Inform (do not ask) when creating. See `references/git-workflow.md` for commands and naming convention.
 3. Write checkpoint: Step 7 → `[x]` | `completed` | Auto `[x]` | Comment: `<branch-name> off <base>`. Update frontmatter: `branch`, `base_branch`.
 
 ---
@@ -177,10 +222,42 @@ Skip this step if Step 6 found an existing branch to resume — go straight to w
 
 1. Open checkpoint: set Step 11 → `in_progress`, Attempts +1, update `last_updated`.
 2. Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
-   - **"Bug"** → Invoke `superpowers:systematic-debugging` with full context as the bug report.
-   - **Anything else** (Feature Request, Tech Debt, etc.) → Invoke `feature-dev:feature-dev` with full context as the feature specification.
-   - **Category missing** → Prompt: "Is this a bug fix or a feature?"
-3. Write checkpoint: Step 11 → `[x]` | `completed` | Auto `[ ]` if category was missing, `[x]` otherwise | Comment: `feature-dev` or `systematic-debugging`. Update frontmatter: `workflow`.
+   - **"Bug"** → Invoke `fix-bug` with the full task context. `fix-bug` is bundled — no dependency check needed.
+   - **Anything else** (Feature Request, Tech Debt, etc.):
+     - If `$ARGUMENTS` contains `brainstorm` — invoke `superpowers:brainstorming` with the full context.
+     - If `$ARGUMENTS` contains `feature-dev` — invoke `feature-dev:feature-dev` with the full context.
+     - If no workflow argument was provided — ask (blocking):
+       > "How do you want to approach this?
+       > 1. Brainstorm the design first (`superpowers:brainstorming`)
+       > 2. Go straight to implementation (`feature-dev:feature-dev`)"
+       Wait for explicit answer before routing. No default assumed.
+   - **Category missing** → Prompt: "Is this a bug fix or a feature?" then apply the routing above.
+3. Include this in the handoff context passed to the downstream skill:
+   > "When this workflow is complete, return to `start-task-steps` Step 12 and invoke `ship-it`. Do not end the session — there is one more step."
+4. Write checkpoint: Step 11 → `[x]` | `completed` | Auto `[ ]` if user input was needed, `[x]` otherwise | Comment: `fix-bug`, `brainstorm`, or `feature-dev`. Update frontmatter: `workflow`.
+
+---
+
+### Step 12: Ship It
+
+**This step runs as soon as the development workflow signals completion** — `fix-bug` after the fix is verified, `feature-dev` at Phase 7 (Summary), or `superpowers:brainstorming` when the design is done. Do not wait for the user to ask.
+
+1. Open checkpoint: set Step 12 → `in_progress`, Attempts +1, update `last_updated`.
+2. Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
+
+   | What | Source |
+   |------|--------|
+   | Task GID | Step 1 (checkpoint frontmatter) |
+   | Task URL | `$ARGUMENTS` / checkpoint frontmatter |
+   | Task ID | Step 2 (checkpoint frontmatter: `task_id`) |
+   | Branch name | Step 7 (checkpoint frontmatter: `branch`) |
+   | Draft PR URL | Step 8 (checkpoint comment) |
+   | Sprint project GID | Step 2 (task memberships) |
+   | Section mappings | Step 9 (discovered when moving to "In Progress") |
+
+   `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
+
+3. Write checkpoint: Step 12 → `[x]` | `completed` | Auto `[x]` | Comment: `Shipped: <pr-url>`.
 
 ---
 
@@ -192,7 +269,7 @@ Set the current step's State → `blocked` in the checkpoint before doing anythi
 
 ## Important Notes
 
-- This skill starts work. It does not ship it. Shipping is handled by `ship-it`.
+- This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done (Step 12).
 - Include the task ID in branch names and commit messages for traceability.
 - Route all Asana API calls through the `asana-api` skill — no raw curl.
 - If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.
