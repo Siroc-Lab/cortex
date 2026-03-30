@@ -220,7 +220,16 @@ Read `references/worktree-flow.md` for all git commands.
 #### 7b-1. Identify what changed
 Run the git diff commands from `references/worktree-flow.md`. If `<changed_files>` is empty, stop and ask the user where the changes are before continuing.
 
-#### 7b-2. Determine the branch name
+#### 7b-2. Ask before touching git
+
+> "Task logged. Want to create a branch and ship now, or leave it for later? [ship/later]"
+
+**Wait for the user's response.**
+
+- If later (or any non-committal response) → stop here. The user can run `/ship-it` whenever ready.
+- If ship → continue to 7b-3.
+
+#### 7b-3. Determine the branch name
 
 ```
 <task_id>/<slug>
@@ -229,18 +238,11 @@ Run the git diff commands from `references/worktree-flow.md`. If `<changed_files
 
 `<slug>` = task title lowercased, spaces to hyphens, max 40 chars, alphanumeric and hyphens only. If no task ID was resolved, use the type prefix (`fix/`, `feat/`, `chore/`, `docs/`) + slug.
 
-#### 7b-3 & 7b-4. Create worktree and copy changes
+#### 7b-4 & 7b-5. Create worktree and copy changes
 Follow the worktree creation and file copy steps in `references/worktree-flow.md`.
 
-#### 7b-5. Confirm before invoking ship-it
+#### 7b-6. Invoke ship-it
 
-Ask the user whether to proceed:
-
-> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Want to ship now, or do it later? [ship/later]"
-
-**Wait for the user's response.**
-
-- If ship → invoke `ship-it`, threading the Asana task GID and URL so it can skip re-asking:
-  - Task GID: `<task_gid>`
-  - Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
-- If later (or any non-committal response) → stop here. The user can run `/ship-it` whenever ready.
+Thread the Asana task GID and URL so `ship-it` can skip re-asking:
+- Task GID: `<task_gid>`
+- Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
