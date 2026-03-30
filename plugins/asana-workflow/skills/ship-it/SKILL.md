@@ -1,5 +1,6 @@
 ---
 name: ship-it
+version: 0.1.0
 description: >
   Thin orchestrator that ships completed work by calling sub-skills in sequence: pre-ship-check,
   work-summary, create-pr, and asana-api. Contains no domain logic — all real work
@@ -24,7 +25,7 @@ Thin orchestrator that calls sub-skills in sequence to ship completed work. This
 ### External tools
 
 - `gh` CLI authenticated for GitHub
-- `$ASANA_PERSONAL_ACCESS_TOKEN` env var for Asana API (or token in `~/.asana.yml`)
+- `$ASANA_PERSONAL_ACCESS_TOKEN` env var for Asana API
 
 ## Context Threading
 

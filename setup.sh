@@ -57,6 +57,7 @@ exists_in_profile() {
 add_to_profile() {
   local var_name="$1"
   local var_value="$2"
+  local comment="${3:-}"
 
   if exists_in_profile "$var_name"; then
     warn "${var_name} already exists in ${PROFILE} — skipping write"
@@ -67,8 +68,9 @@ add_to_profile() {
 
   # Insert the export line before the section footer
   local tmp="${PROFILE}.tmp.$$"
-  awk -v header="$SECTION_FOOTER" -v line="export ${var_name}=\"${var_value}\"" '
-    $0 == header { print line }
+  AWKS_LINE="export ${var_name}=\"${var_value}\"" \
+  awk -v header="$SECTION_FOOTER" '
+    $0 == header { print ENVIRON["AWKS_LINE"] }
     { print }
   ' "$PROFILE" > "$tmp" && mv "$tmp" "$PROFILE"
 
