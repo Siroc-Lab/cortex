@@ -1,0 +1,8 @@
+{
+  "name": "project-qa",
+  "description": "Investigate specific questions and problems in running applications using browser DevTools",
+  "version": "1.0.0",
+  "author": {
+    "name": "SIROC Team"
+  }
+}
