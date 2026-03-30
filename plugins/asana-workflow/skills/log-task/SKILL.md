@@ -400,26 +400,21 @@ git commit -m "<task_id> :: <task-title-slug>"
 
 **Do NOT push.** Do NOT create a PR. Do NOT update Asana status. ship-it owns all of these — do them manually and you will duplicate work or skip required checks.
 
-#### 7b-5. Invoke ship-it in the worktree context
+#### 7b-5. Confirm before invoking ship-it
 
-**This step is mandatory. Never skip it, even if the branch looks ready or the push feels like a natural stopping point.**
+Ask the user whether to proceed:
 
-ship-it owns everything after the commit:
-- Pushing the branch to origin
-- Creating the PR
-- Pre-ship checks
-- Final Asana status update
+> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Ready to ship? I'll hand off to ship-it for push, PR, and Asana update. [Y/n]"
 
-log-task's job ends at the commit. Hand off immediately.
+**Wait for the user's response.**
 
-Tell the user:
-> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Handing off to ship-it for push, PR, and Asana update."
+- If yes → invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
+  - Task GID: `<task_gid>`
+  - Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
 
-Invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
-- Task GID: `<task_gid>`
-- Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
+  `ship-it` should detect the task context from conversation and skip its Asana discovery step.
 
-`ship-it` should detect the task context from conversation and skip its Asana discovery step.
+- If no → stop here. The branch is committed and ready; the user can run `/ship-it` whenever they're ready.
 
 ---
 
