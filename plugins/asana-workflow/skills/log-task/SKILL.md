@@ -58,7 +58,11 @@ Infer from conversation context which of the two paths applies. Proceed silently
 **Variant B — Fix Done**: Work IS already done (or substantially done) in this session. The user wants to create the task retroactively.
 > Signals: "we just fixed it", "I already implemented this", "log what we just did", session has meaningful git changes or file edits.
 
-**If genuinely ambiguous** (no clear signals either way), ask once:
+**Always announce the inferred variant before proceeding**, even when confident:
+- Variant A: > "Treating this as a plan-only task — I'll create the Asana task and ask if you want to start work after."
+- Variant B: > "Treating this as a completed fix — I'll create the Asana task and set up a branch for shipping."
+
+**If genuinely ambiguous** (no clear signals either way), ask instead:
 > "Is the work already done, or are you planning to start after logging? [done/plan]"
 
 **Wait for the user's response** before continuing.
