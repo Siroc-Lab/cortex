@@ -19,7 +19,7 @@ Create the directory on first use: `mkdir -p .claude/checkpoints/`. Ensure `.cla
 | `asana_url` | Full Asana task URL |
 | `branch` | Feature branch name — filled in after Step 7 |
 | `base_branch` | Branch it was created from — filled in after Step 7 |
-| `workflow` | `feature-dev` or `systematic-debugging` — filled in after Step 11 |
+| `workflow` | `fix-bug`, `brainstorm`, or `feature-dev` — filled in after Step 11 |
 | `created_at` | ISO 8601 timestamp — set once on initialization |
 | `last_updated` | ISO 8601 timestamp — updated after every step |
 
@@ -64,6 +64,8 @@ last_updated: "<iso8601>"
 | 4. Fetch Subtasks | [ ] | | 0 | — | [x] |
 | 5. Fetch Comments & Attachments | [ ] | | 0 | — | [x] |
 | 6. Check Existing Work | [ ] | | 0 | — | [x] |
+| 6b. Ask About Worktree | [ ] | | 0 | — | [ ] |
+| 6c. Confirm Base Branch | [ ] | | 0 | — | [ ] |
 | 7. Create Feature Branch | [ ] | | 0 | — | [x] |
 | 8. Create Draft PR | [ ] | | 0 | — | [x] |
 | 9. Move to In Progress | [ ] | | 0 | — | [x] |
@@ -99,6 +101,8 @@ last_updated: 2026-03-30T10:14:32Z
 | 4. Fetch Subtasks | [x] | 3 subtasks (1 complete, 2 remaining) | 1 | completed | [x] |
 | 5. Fetch Comments & Attachments | [x] | 2 comments, 1 screenshot attachment | 1 | completed | [x] |
 | 6. Check Existing Work | [x] | No existing branch found | 1 | completed | [x] |
+| 6b. Ask About Worktree | [x] | current directory | 1 | completed | [ ] |
+| 6c. Confirm Base Branch | [x] | main | 1 | completed | [ ] |
 | 7. Create Feature Branch | [x] | MT251-47/add-csv-export off main | 1 | completed | [x] |
 | 8. Create Draft PR | [ ] | | 0 | in_progress | [x] |
 | 9. Move to In Progress | [ ] | | 0 | — | [x] |
@@ -167,11 +171,13 @@ When a step is **blocked**:
 | 4. Fetch Subtasks | `<N> subtasks (<M> complete, <K> remaining)` |
 | 5. Fetch Comments & Attachments | `<N> comments, <M> attachments` |
 | 6. Check Existing Work | `No existing branch` or `Resumed: <branch-name>` |
+| 6b. Ask About Worktree | `worktree` or `current directory` |
+| 6c. Confirm Base Branch | `<base-branch>` |
 | 7. Create Feature Branch | `<branch-name> off <base>` |
 | 8. Create Draft PR | `<pr-url>` |
 | 9. Move to In Progress | `Moved` or `Already in progress` or `Failed: <reason>` |
 | 10. Post Start Comment | `Posted` or `Skipped (duplicate)` |
-| 11. Route to Workflow | `feature-dev` or `systematic-debugging` |
+| 11. Route to Workflow | `fix-bug`, `brainstorm`, or `feature-dev` |
 
 ### Frontmatter Updates
 
