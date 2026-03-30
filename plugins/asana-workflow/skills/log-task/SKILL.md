@@ -27,11 +27,7 @@ Take something discovered or completed in conversation and formalize it as an As
 
 Before doing anything else, scan `$ARGUMENTS` and the triggering message for Asana project URLs.
 
-**Extract GIDs from URLs** — Asana project URLs follow `app.asana.com/0/<project-gid>/...`. The GID is always the first path segment after `/0/`. Match with:
-
-```
-https://app\.asana\.com/0/(\d+)
-```
+Extract GIDs from URLs using the pattern `app.asana.com/0/(\d+)` — the GID is the first path segment after `/0/`.
 
 **Disambiguate sprint vs backlog** using context words near each URL:
 
@@ -41,21 +37,14 @@ https://app\.asana\.com/0/(\d+)
 | "backlog", "product backlog", "use backlog", "new backlog" | backlog override |
 | No context words | ambiguous |
 
-If a URL is detected, resolve its project name via API before proceeding:
-
-```bash
-curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/projects/<gid>?opt_fields=name,workspace.gid"
-```
-
-Store the results as `sprint_override` and/or `backlog_override` (each with `gid` + `name`). If a workspace GID is returned, also store it as `workspace_override`.
+For each URL detected, resolve the project name and workspace GID via the API (see `references/board-config.md`). Store as `sprint_override` and/or `backlog_override` (each with `gid` + `name`), and `workspace_override` if returned.
 
 **Ambiguity rules:**
 - Two URLs with no context → ask once: "Which is the sprint board and which is the backlog?"
 - One URL with no context → ask: "Is this the sprint board or the backlog?"
-- URL that isn't a valid Asana project URL → ignore silently, do not block
+- URL that isn't a valid Asana project URL → ignore silently
 
-Carry any resolved overrides into Step 2.
+Carry resolved overrides into Step 2.
 
 ---
 
@@ -78,42 +67,19 @@ Infer from conversation context which of the two paths applies. Proceed silently
 
 ## Step 2: Load Board Config
 
-Config lives at `~/.claude/asana-workflow/<project-key>.json` — NOT in the repo. This keeps project-specific board GIDs out of source control while being available across sessions.
+Config lives at `~/.claude/asana-workflow/<project-key>.json` — NOT in the repo.
 
-### Derive the project key
-
-```bash
-# Prefer git remote URL for stable, unique identity
-git remote get-url origin 2>/dev/null \
-  | sed 's|[^a-zA-Z0-9]|-|g' \
-  | sed 's|-\{2,\}|-|g' \
-  | tr '[:upper:]' '[:lower:]'
-# Fallback if no remote:
-basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-```
-
-### Config file structure
-
-```json
-{
-  "sprint_project_gid": "1234567890",
-  "sprint_project_name": "ENG | Sprint 26.x",
-  "backlog_project_gid": "9876543210",
-  "backlog_project_name": "Product Backlog",
-  "workspace_gid": "111111111"
-}
-```
+Read `references/board-config.md` for the project key derivation command, config file structure, and save/update template.
 
 ### Apply overrides from Step 0
 
-After loading (or failing to load) config, merge any overrides resolved in Step 0:
+After loading (or failing to load) config, merge any overrides:
 
-- If `sprint_override` is set → replace `sprint_project_gid` and `sprint_project_name` in config
-- If `backlog_override` is set → replace `backlog_project_gid` and `backlog_project_name` in config
+- If `sprint_override` is set → replace `sprint_project_gid` and `sprint_project_name`
+- If `backlog_override` is set → replace `backlog_project_gid` and `backlog_project_name`
 - If `workspace_override` is set and config has no `workspace_gid` → set it
 
-If any override was applied, save the updated config immediately (see Config Save/Update section) and report:
-
+If any override was applied, save the updated config and report:
 ```
 Sprint board updated: ENG | Sprint 27.x  (was: ENG | Sprint 26.x)
 Config saved to ~/.claude/asana-workflow/<project-key>.json
@@ -121,7 +87,7 @@ Config saved to ~/.claude/asana-workflow/<project-key>.json
 
 ### If config is missing — ask for URLs
 
-If config is missing AND no overrides were provided for a board, ask for the missing project URLs:
+If config is missing AND no overrides were provided for a board, ask:
 
 ```
 No board config found for this project. I need the Asana URLs for:
@@ -132,31 +98,15 @@ No board config found for this project. I need the Asana URLs for:
 I'll save them to ~/.claude/asana-workflow/<project-key>.json (not in the repo).
 ```
 
-If overrides cover one board but not the other, ask only for the missing one.
-
-**Once URLs are provided**, extract the GID from each URL using the `app.asana.com/0/(\d+)` pattern, then resolve the project name and workspace GID from the API:
-
-```bash
-curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/projects/<gid>?opt_fields=name,workspace.gid"
-```
-
-Use the returned `name` and `workspace.gid` to populate the config. Never ask the user for the GID or workspace GID directly — always derive them from the URL.
+If overrides cover one board but not the other, ask only for the missing one. Once URLs are provided, derive GIDs and workspace GID via the API (see `references/board-config.md`). Never ask the user for raw GIDs.
 
 ---
 
 ## Step 3: Discover Custom Fields
 
-Fetch the custom field definitions from the Sprint project. This is how you find out what fields exist and what values are valid — field names and enum options vary across projects, so never hardcode them.
+Read `references/asana-api-calls.md` for the custom field discovery call and the current user fetch.
 
-```bash
-curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/projects/<sprint_project_gid>/custom_field_settings\
-?opt_fields=custom_field.gid,custom_field.name,custom_field.type,\
-custom_field.enum_options,custom_field.enum_options.gid,custom_field.enum_options.name"
-```
-
-From the response, identify the fields you'll want to populate. Match by name using fuzzy, case-insensitive patterns:
+Match fields by name using fuzzy, case-insensitive patterns:
 
 | Intent | Match patterns |
 |--------|---------------|
@@ -166,22 +116,13 @@ From the response, identify the fields you'll want to populate. Match by name us
 | Product Status | "product status", "status", "state" |
 | Assignee | handled natively — not a custom field |
 
-For each matched field, record its GID and the full list of enum options (name + GID). You'll use these in Step 4 to pick sensible defaults and in Step 5 to show the user.
-
-If a field has no match in the project, skip it gracefully — note it in the draft but don't block creation.
-
-Also fetch the current user's GID for default assignment:
-
-```bash
-curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/users/me?opt_fields=gid,name,email"
-```
+Record each matched field's GID and full enum options list. If a field has no match, skip it gracefully.
 
 ---
 
 ## Step 4: Gather Task Details and Pick Defaults
 
-Extract from conversation context as much as possible — do not ask for things already said. Fill any gaps with smart defaults:
+Extract from conversation context as much as possible. Fill gaps with smart defaults:
 
 | Field | Default | Notes |
 |-------|---------|-------|
@@ -193,7 +134,7 @@ Extract from conversation context as much as possible — do not ask for things 
 | **Assignee** | Current user (Variant B) / Unassigned (Variant A) | |
 | **Product Status** | "Assigned" enum option | Match case-insensitively |
 
-**Sizing/Estimate for Variant B**: The work is done, so use it as a guide. Brief fix (< 1h) → smallest size. Moderate (1–4h) → second-smallest. Substantial (4h+) → medium. Err toward smaller — this task is being logged retroactively.
+**Sizing/Estimate for Variant B**: Brief fix (< 1h) → smallest. Moderate (1–4h) → second-smallest. Substantial (4h+) → medium. Err toward smaller.
 
 **Priority**: Default to the highest urgency enum option using semantic matching — do not rely on list position. If the conversation describes something non-critical ("nice to have", "minor cleanup"), drop to a mid-level option instead.
 
@@ -201,7 +142,7 @@ Extract from conversation context as much as possible — do not ask for things 
 
 ## Step 5: Present Full Draft for Confirmation (REQUIRED)
 
-Show everything — boards, fields, and values — before creating anything. The user must confirm. This step is non-negotiable.
+Show everything before creating anything. The user must confirm. This step is non-negotiable.
 
 ```
 Task draft:
@@ -225,95 +166,22 @@ Task draft:
 Create this task? [Y/n / type field name to edit]
 ```
 
-If any field options couldn't be discovered (field not in project), show them as `— (not available in this project)` rather than omitting them.
-
-If the user edits a field, update the draft and show it again. Do not create until explicit confirmation.
+If a field couldn't be discovered, show it as `— (not available in this project)`. If the user edits a field, update the draft and show it again. Do not create until explicit confirmation.
 
 ---
 
 ## Step 6: Create the Task
 
-Create once confirmed. Use the `asana-api` skill patterns.
+Read `references/asana-api-calls.md` for all curl commands. Execute in this order — do not skip or reorder:
 
-### 6a. Create the task
+1. **6a** — Create the task (workspace + assignee only, no custom fields)
+2. **6b** — Add to Sprint project
+3. **6c** — Add to Backlog project
+4. **6d** — Set custom fields via PUT (now that the task is in a project)
+5. **6d cont** — Fetch the auto-assigned task ID (retry up to 3 times, 10s apart). If still absent after all retries, derive a prefix from context:
+   - Bug fix → `fix/<slug>`, Feature → `feat/<slug>`, Tech debt → `chore/<slug>`, Docs → `docs/<slug>`
 
-**Do NOT include custom fields in this call** — the Asana API rejects them until the task belongs to a project. Set them in step 6d after adding to projects.
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data": {
-      "name": "<title>",
-      "notes": "<description>",
-      "workspace": "<workspace_gid>",
-      "assignee": "<user_gid or null>"
-    }
-  }' \
-  "https://app.asana.com/api/1.0/tasks"
-```
-
-Save the returned `task_gid`.
-
-For `assignee`: send `"assignee": null` explicitly (not omitting the field) for Variant A. Omitting it vs sending null behaves the same in the Asana API, but being explicit avoids ambiguity.
-
-### 6b. Add to Sprint project
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"data":{"project":"<sprint_project_gid>"}}' \
-  "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
-```
-
-### 6c. Add to Backlog project
-
-```bash
-curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"data":{"project":"<backlog_project_gid>"}}' \
-  "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
-```
-
-### 6d. Set custom fields, then fetch the task ID
-
-Now that the task is in a project, set custom fields via PUT:
-
-```bash
-curl -s -X PUT -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "data": {
-      "custom_fields": {
-        "<priority_gid>": "<selected_enum_gid>",
-        "<sizing_gid>": "<selected_enum_gid>",
-        "<estimate_gid>": "<selected_enum_gid>",
-        "<product_status_gid>": "<assigned_enum_gid>"
-      }
-    }
-  }' \
-  "https://app.asana.com/api/1.0/tasks/<task_gid>"
-```
-
-Only include custom fields that were successfully discovered.
-
-Then re-fetch the task to get the auto-assigned ID field (e.g., `MT251-182`). This is set by Asana automation once the task is in the right project:
-
-```bash
-curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/tasks/<task_gid>?opt_fields=custom_fields,custom_fields.name,custom_fields.display_value,custom_fields.type"
-```
-
-Look for a text-type custom field whose `display_value` matches the pattern `[A-Z]+-\d+` (uppercase prefix, hyphen, digits). Save this as `<task_id>`.
-
-If the ID field is not yet set (Asana automation typically assigns it within 5–10 seconds of the task being added to a project), retry up to 3 times waiting 10 seconds between each attempt. If still absent after all retries, derive a sensible prefix from context:
-- Bug fix → `fix/<slug>`
-- Feature → `feat/<slug>`
-- Tech debt / cleanup → `chore/<slug>`
-- Documentation → `docs/<slug>`
-
-### 6e. Report success
-
+Report success:
 ```
 ✓ Task created: Fix null pointer in export pipeline when CSV is empty
   ID:      MT251-182
@@ -321,99 +189,46 @@ If the ID field is not yet set (Asana automation typically assigns it within 5�
   Boards:  ENG | Sprint 26.x + Product Backlog
 ```
 
+**Error handling:**
+- Never silently fail an API call — report status code and error.
+- If task creation succeeds but adding to a project fails, do not roll back. Report the task URL so the user can add it manually.
+- If custom field GIDs can't be resolved, create the task without those fields and list what's missing.
+
 ---
 
 ## Step 7: Route to the Next Step
 
 ### Variant A — Plan Only
 
-The task is created. Ask the user whether to proceed:
+Ask the user whether to proceed:
 
 > "Task logged. Want to start work on it now, or leave it for later? [start/later]"
 
 **Wait for the user's response.**
 
-- If start → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`. It will handle branch creation, validation, and workflow routing.
-- If later (or any non-committal response) → stop here. The task is in Asana; the user can start it later with `/start-task <url>`.
+- If start → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`.
+- If later (or any non-committal response) → stop here. The user can start later with `/start-task <url>`.
 
 ---
 
 ### Variant B — Fix Done: Worktree + Ship
 
-The work is done. The goal is to get those changes onto a clean branch without disrupting the current working directory or any other in-flight work.
+Read `references/worktree-flow.md` for all git commands.
 
 #### 7b-1. Identify what changed
-
-Capture the set of changed files relative to `main` (both staged and unstaged):
-
-```bash
-# Files changed vs main (uncommitted)
-git diff --name-only main
-
-# If there are commits on the current branch beyond main:
-git diff --name-only main...HEAD
-```
-
-Save the union of both lists as `<changed_files>`.
-
-**If `<changed_files>` is empty**, stop and ask:
-> "I don't see any changes in the working tree relative to main. Are the changes stashed, on a different branch, or not yet saved? Let me know where to find them."
-
-Do not proceed to 7b-2 until the changed files are identified.
+Run the git diff commands from `references/worktree-flow.md`. If `<changed_files>` is empty, stop and ask the user where the changes are before continuing.
 
 #### 7b-2. Determine the branch name
-
-Use the task ID from Step 6d:
 
 ```
 <task_id>/<slug>
 # e.g., MT251-182/fix-csv-export-null-crash
 ```
 
-Where `<slug>` is the task title lowercased, spaces to hyphens, max 40 chars, alphanumeric and hyphens only.
+`<slug>` = task title lowercased, spaces to hyphens, max 40 chars, alphanumeric and hyphens only. If no task ID was resolved, use the type prefix (`fix/`, `feat/`, `chore/`, `docs/`) + slug.
 
-If no task ID was resolved, use the type prefix (`fix/`, `feat/`, `chore/`, `docs/`) + slug.
-
-#### 7b-3. Create a git worktree
-
-Create a sibling worktree so the new branch lives in its own directory without touching the current workspace:
-
-```bash
-# Determine worktree path — sibling to the repo root
-REPO_ROOT=$(git rev-parse --show-toplevel)
-WORKTREE_PATH="${REPO_ROOT}/../$(basename $REPO_ROOT)-<task-id-slug>"
-
-# Ensure main is up to date
-git fetch origin main
-
-# Create worktree on a new branch based on main
-git worktree add "$WORKTREE_PATH" -b "<branch_name>" origin/main
-```
-
-Report the worktree path to the user:
-> "Created worktree at `../cortex-MT251-182` on branch `MT251-182/fix-csv-export-null-crash`."
-
-#### 7b-4. Copy changes into the worktree
-
-Copy each changed file from the current working directory into the worktree:
-
-```bash
-for f in <changed_files>; do
-  # Create directory if needed
-  mkdir -p "$WORKTREE_PATH/$(dirname $f)"
-  cp "$REPO_ROOT/$f" "$WORKTREE_PATH/$f"
-done
-```
-
-Then stage and commit in the worktree:
-
-```bash
-cd "$WORKTREE_PATH"
-git add <changed_files>
-git commit -m "<task_id> :: <task-title-slug>"
-```
-
-**Do NOT push.** Do NOT create a PR. Do NOT update Asana status. ship-it owns all of these — do them manually and you will duplicate work or skip required checks.
+#### 7b-3 & 7b-4. Create worktree and copy changes
+Follow the worktree creation and file copy steps in `references/worktree-flow.md`.
 
 #### 7b-5. Confirm before invoking ship-it
 
@@ -423,42 +238,7 @@ Ask the user whether to proceed:
 
 **Wait for the user's response.**
 
-- If ship → invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
+- If ship → invoke `ship-it`, threading the Asana task GID and URL so it can skip re-asking:
   - Task GID: `<task_gid>`
   - Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
-
-  `ship-it` should detect the task context from conversation and skip its Asana discovery step.
-
-- If later (or any non-committal response) → stop here. The branch is committed and ready; the user can run `/ship-it` whenever they're ready.
-
----
-
-## Error Handling
-
-- Never silently fail an API call — report status code and error.
-- If task creation succeeds but adding to a project fails, do not roll back. Report the task URL so the user can add it manually.
-- If the worktree path already exists, append a counter suffix (`-2`, `-3`) rather than failing.
-- If `git worktree add` fails (e.g., branch already exists), report clearly and ask whether to reuse the existing branch or pick a new name.
-- If custom field GIDs can't be resolved, create the task without those fields and list what's missing in the success report.
-- If the task ID doesn't appear after two fetch attempts, proceed with the slug-based branch name and note that the ID may appear in Asana shortly.
-
----
-
-## Config Save/Update
-
-When saving a new or updated config, write it to disk and confirm to the user:
-
-```bash
-mkdir -p ~/.claude/asana-workflow
-cat > ~/.claude/asana-workflow/<project-key>.json << 'CONF'
-{
-  "sprint_project_gid": "...",
-  "sprint_project_name": "...",
-  "backlog_project_gid": "...",
-  "backlog_project_name": "...",
-  "workspace_gid": "..."
-}
-CONF
-```
-
-> "Config saved to `~/.claude/asana-workflow/<project-key>.json` — not in the repo, won't be committed."
+- If later (or any non-committal response) → stop here. The user can run `/ship-it` whenever ready.
