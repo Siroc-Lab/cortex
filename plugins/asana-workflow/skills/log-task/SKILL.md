@@ -61,16 +61,18 @@ Carry any resolved overrides into Step 2.
 
 ## Step 1: Determine the Variant
 
-Infer from conversation context which of the two paths applies. Do not ask unless genuinely ambiguous.
+Infer from conversation context which of the two paths applies. Proceed silently — do not announce the inferred variant or ask for confirmation unless the signals are genuinely ambiguous.
 
-**Variant A — Plan Only**: Work has NOT been done yet. The user wants to create the Asana task first, then start working on it via `start-task`.
+**Variant A — Plan Only**: Work has NOT been done yet. The user wants to create the Asana task first, then optionally start working on it.
 > Signals: "I want to plan this", "let me log it before we start", "we just figured out what needs to be done", task is still an idea.
 
-**Variant B — Fix Done**: Work IS already done (or substantially done) in this session. The user wants to create the task retroactively and route to `ship-it`.
+**Variant B — Fix Done**: Work IS already done (or substantially done) in this session. The user wants to create the task retroactively.
 > Signals: "we just fixed it", "I already implemented this", "log what we just did", session has meaningful git changes or file edits.
 
-State the inferred variant to the user before proceeding:
-> "It looks like you've already fixed this — I'll create the task and hand off to ship-it. Is that right, or are you planning to start work after logging?"
+**If genuinely ambiguous** (no clear signals either way), ask once:
+> "Is the work already done, or are you planning to start after logging? [done/plan]"
+
+**Wait for the user's response** before continuing.
 
 ---
 
@@ -117,21 +119,29 @@ Sprint board updated: ENG | Sprint 27.x  (was: ENG | Sprint 26.x)
 Config saved to ~/.claude/asana-workflow/<project-key>.json
 ```
 
-### If config is missing — ask directly
+### If config is missing — ask for URLs
 
-If config is missing AND no overrides were provided for a board, ask for the missing pieces:
+If config is missing AND no overrides were provided for a board, ask for the missing project URLs:
 
 ```
-No board config found for this project. I need two Asana project GIDs:
+No board config found for this project. I need the Asana URLs for:
 
-1. Sprint board — name + GID
-   (Find the GID in the Asana URL: app.asana.com/0/<project-gid>/...)
-2. Backlog board — name + GID
+1. Sprint board — paste the URL from your browser (app.asana.com/0/<project-gid>/...)
+2. Backlog board — paste the URL from your browser
 
 I'll save them to ~/.claude/asana-workflow/<project-key>.json (not in the repo).
 ```
 
 If overrides cover one board but not the other, ask only for the missing one.
+
+**Once URLs are provided**, extract the GID from each URL using the `app.asana.com/0/(\d+)` pattern, then resolve the project name and workspace GID from the API:
+
+```bash
+curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
+  "https://app.asana.com/api/1.0/projects/<gid>?opt_fields=name,workspace.gid"
+```
+
+Use the returned `name` and `workspace.gid` to populate the config. Never ask the user for the GID or workspace GID directly — always derive them from the URL.
 
 ---
 
@@ -177,7 +187,7 @@ Extract from conversation context as much as possible — do not ask for things 
 |-------|---------|-------|
 | **Title** | Summarize in ≤ 72 chars | From conversation; make it specific |
 | **Description** | Summary of issue/fix/plan | Include root cause if known |
-| **Priority** | Highest available option | e.g., P0, Critical, Urgent — pick the top enum option |
+| **Priority** | Highest urgency option | Match semantically: prefer names containing "0", "critical", or "urgent"; or the option with the lowest numeric suffix (P0 < P1 < P2). Fall back to first in list only if no semantic match. |
 | **Sizing** | Lowest available option | e.g., XS, 1, S — if Variant B, use session scope as proxy |
 | **Estimate** | Lowest available option | Same proxy logic as sizing |
 | **Assignee** | Current user (Variant B) / Unassigned (Variant A) | |
@@ -185,7 +195,7 @@ Extract from conversation context as much as possible — do not ask for things 
 
 **Sizing/Estimate for Variant B**: The work is done, so use it as a guide. Brief fix (< 1h) → smallest size. Moderate (1–4h) → second-smallest. Substantial (4h+) → medium. Err toward smaller — this task is being logged retroactively.
 
-**Priority**: Default to the highest urgency enum option unless the user has indicated otherwise in conversation. If the conversation describes something non-critical ("nice to have", "minor cleanup"), drop to a mid-level.
+**Priority**: Default to the highest urgency enum option using semantic matching — do not rely on list position. If the conversation describes something non-critical ("nice to have", "minor cleanup"), drop to a mid-level option instead.
 
 ---
 
@@ -319,12 +329,12 @@ If the ID field is not yet set (automation can take a moment), retry once after 
 
 The task is created. Ask the user whether to proceed:
 
-> "Task logged. Ready to start work on it now? [Y/n]"
+> "Task logged. Want to start work on it now, or leave it for later? [start/later]"
 
 **Wait for the user's response.**
 
-- If yes → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`. It will handle branch creation, validation, and workflow routing.
-- If no → stop here. The task is in Asana; the user can start it later with `/start-task <url>`.
+- If start → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`. It will handle branch creation, validation, and workflow routing.
+- If later (or any non-committal response) → stop here. The task is in Asana; the user can start it later with `/start-task <url>`.
 
 ---
 
@@ -345,6 +355,11 @@ git diff --name-only main...HEAD
 ```
 
 Save the union of both lists as `<changed_files>`.
+
+**If `<changed_files>` is empty**, stop and ask:
+> "I don't see any changes in the working tree relative to main. Are the changes stashed, on a different branch, or not yet saved? Let me know where to find them."
+
+Do not proceed to 7b-2 until the changed files are identified.
 
 #### 7b-2. Determine the branch name
 
@@ -404,17 +419,17 @@ git commit -m "<task_id> :: <task-title-slug>"
 
 Ask the user whether to proceed:
 
-> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Ready to ship? I'll hand off to ship-it for push, PR, and Asana update. [Y/n]"
+> "Changes committed on branch `MT251-182/fix-csv-export-null-crash` in `../cortex-MT251-182`. Want to ship now, or do it later? [ship/later]"
 
 **Wait for the user's response.**
 
-- If yes → invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
+- If ship → invoke `ship-it`. Thread the Asana task GID and URL so `ship-it` can skip re-asking for them:
   - Task GID: `<task_gid>`
   - Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
 
   `ship-it` should detect the task context from conversation and skip its Asana discovery step.
 
-- If no → stop here. The branch is committed and ready; the user can run `/ship-it` whenever they're ready.
+- If later (or any non-committal response) → stop here. The branch is committed and ready; the user can run `/ship-it` whenever they're ready.
 
 ---
 
