@@ -1,0 +1,198 @@
+---
+name: start-task-steps
+description: >
+  This skill should be used when the user provides an Asana task URL and wants to begin working on it,
+  or says things like "start task", "work on this", "pick up this ticket", "begin this task", or pastes
+  an Asana URL with intent to start development. Also handles pausing blocked work ("park this",
+  "I'm blocked", "pause task", "put this on hold") and resuming paused tasks ("resume task",
+  "pick up where I left off", "continue [task-id]"). This is the entry point for the company's
+  development workflow — from ticket to code, with mandatory checkpoint tracking at every step.
+argument-hint: <asana-task-url>
+---
+
+# Start Task (Steps)
+
+Take an Asana task, validate it's ready for development, understand the work, set up the branch, and route to the right skill. This skill is the conductor — it validates, prepares, and hands off.
+
+Every step updates the checkpoint file immediately upon completion. This is mandatory. The checkpoint is the single source of truth for task progress.
+
+## Checkpoint Protocol
+
+The checkpoint file at `.claude/checkpoints/<task-gid>.md` tracks every step of this skill's execution. It must be written after each step. This is not optional and cannot be skipped.
+
+**The rule:** A step is not complete until its row in the checkpoint file is updated. You may not begin the next step until the file is written. The sequence for every step is:
+
+```
+1. Mark the step row: State → in_progress, Attempts +1, update last_updated
+2. Do the step's work
+3. Mark the step row: Completed → [x], State → completed, fill Comment and Auto
+4. Only then: move to the next step
+```
+
+If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Never leave a step as `in_progress` and advance past it.
+
+## Prerequisites
+
+- `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc`. If missing, stop and guide setup:
+  > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
+  > Get token from: https://app.asana.com/0/my-apps
+- Access to `feature-dev:feature-dev` and `superpowers:systematic-debugging` skills
+- The `asana-api` skill for all Asana API operations
+
+## Reference Files
+
+- **`references/checkpoints.md`** — Checkpoint file format, step update rules, pause/resume flows
+- **`references/validation-rules.md`** — Sprint-readiness checks, failure display, skip rules
+- **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
+- **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
+
+---
+
+## The Flow
+
+### Step 0: Initialize Checkpoint
+
+**This is the very first action. Do not call any API or run any git command before this.**
+
+1. Extract the task GID from the URL in `$ARGUMENTS`. See `references/asana-patterns.md` for URL formats. If no URL is provided, prompt for it now.
+
+2. Check for an existing checkpoint:
+   ```bash
+   ls .claude/checkpoints/<task-gid>.md 2>/dev/null
+   ```
+
+3. **If checkpoint found** → this is a resume. Read `references/checkpoints.md` Section 5 for the resume flow. Find the first row where `Completed = [ ]` and jump to that step. Do not re-run completed steps.
+
+4. **If no checkpoint** → create it now:
+   ```bash
+   mkdir -p .claude/checkpoints/
+   ```
+   Write the template from `references/checkpoints.md` Section 1 with `task_gid`, `asana_url`, `created_at`, `last_updated` filled in. All steps: `[ ]`, state `—`, attempts `0`. Ensure `.claude/checkpoints/` is in `.gitignore`.
+
+---
+
+### Step 1: Get the Asana Task URL
+
+1. Open checkpoint: set Step 1 → `in_progress`, Attempts → 1, update `last_updated`.
+2. Confirm the URL is valid and the GID is numeric (already extracted in Step 0).
+3. Write checkpoint: Step 1 → `[x]` | `completed` | Auto `[x]` | Comment: `GID: <task-gid>`.
+
+---
+
+### Step 2: Fetch Task Details
+
+1. Open checkpoint: set Step 2 → `in_progress`, Attempts +1, update `last_updated`.
+2. Fetch the full task via the `asana-api` skill with all required `opt_fields` (see `references/asana-patterns.md`).
+3. Present a quick summary: task name, assignee, category, task ID, sprint.
+4. Write checkpoint: Step 2 → `[x]` | `completed` | Auto `[x]` | Comment: `<task-id> — <task-name>`. Update frontmatter: `task_id`.
+
+---
+
+### Step 3: Validate Sprint-Readiness
+
+1. Open checkpoint: set Step 3 → `in_progress`, Attempts +1, update `last_updated`.
+2. Run four validation checks: Sprint project membership, Estimated time, Product Status = Assigned, ID field. See `references/validation-rules.md` for details.
+3. Report failures as a checklist. Sprint membership, Estimated time, and Product Status are blocking — offer to set the latter two via API. Only the ID field can be skipped. Do not proceed until all blocking checks pass.
+4. If checks require fixing (user interaction), re-run this step after each fix (return to sub-step 1, incrementing Attempts again).
+5. Write checkpoint: Step 3 → `[x]` | `completed` | Auto `[ ]` | Comment: `All checks passed` or `Fixed: <what was set>`.
+
+---
+
+### Step 4: Fetch Subtasks
+
+1. Open checkpoint: set Step 4 → `in_progress`, Attempts +1, update `last_updated`.
+2. Fetch subtasks via the `asana-api` skill. Group by status: incomplete = remaining work, completed = already done. Include in downstream context.
+3. Write checkpoint: Step 4 → `[x]` | `completed` | Auto `[x]` | Comment: `<N> subtasks (<M> complete, <K> remaining)`.
+
+---
+
+### Step 5: Fetch Comments and Attachments
+
+1. Open checkpoint: set Step 5 → `in_progress`, Attempts +1, update `last_updated`.
+2. Fetch task stories and filter for `type: "comment"`. List attachments by name, noting any images (mockups, screenshots). See `references/asana-patterns.md` for details.
+3. Write checkpoint: Step 5 → `[x]` | `completed` | Auto `[x]` | Comment: `<N> comments, <M> attachments`.
+
+---
+
+### Step 6: Check for Existing Work
+
+1. Open checkpoint: set Step 6 → `in_progress`, Attempts +1, update `last_updated`.
+2. Check if work already exists for this task ID (see `references/git-workflow.md` for detection commands).
+3. If a branch or PR exists, offer to resume that work or start fresh. If resuming, check out the existing branch and skip Step 7.
+4. Write checkpoint: Step 6 → `[x]` | `completed` | Auto `[x]` | Comment: `No existing branch` or `Resumed: <branch-name>`.
+
+---
+
+### Step 7: Create Feature Branch
+
+Skip this step if Step 6 found an existing branch to resume — go straight to writing the checkpoint for Step 7 as `completed | Skipped: resumed existing branch`.
+
+1. Open checkpoint: set Step 7 → `in_progress`, Attempts +1, update `last_updated`.
+2. Create a branch using the task ID and a slug from the task name. Default to `main` as base. Inform (do not ask) when creating. See `references/git-workflow.md` for commands and naming convention.
+3. Write checkpoint: Step 7 → `[x]` | `completed` | Auto `[x]` | Comment: `<branch-name> off <base>`. Update frontmatter: `branch`, `base_branch`.
+
+---
+
+### Step 8: Create Draft PR
+
+1. Open checkpoint: set Step 8 → `in_progress`, Attempts +1, update `last_updated`.
+2. Create an empty commit:
+   ```bash
+   git commit --allow-empty -m "<task-id> :: <task-name-slug> (start)"
+   ```
+3. Push the branch:
+   ```bash
+   git push -u origin $(git branch --show-current)
+   ```
+4. Create the draft PR:
+   ```bash
+   gh pr create --draft --title "<TASK-ID> :: <description>" --body "$(cat <<'EOF'
+   ## Asana Task
+   <asana-task-url>
+   EOF
+   )"
+   ```
+5. Capture the draft PR URL — needed for the Asana start comment and `ship-it`.
+6. Write checkpoint: Step 8 → `[x]` | `completed` | Auto `[x]` | Comment: `<pr-url>`.
+
+---
+
+### Step 9: Move to In Progress
+
+1. Open checkpoint: set Step 9 → `in_progress`, Attempts +1, update `last_updated`.
+2. Move the task to "In Progress" on the Sprint board. Skip if already there. See `references/asana-patterns.md` for the section move API pattern. If the move fails, report why but continue.
+3. Write checkpoint: Step 9 → `[x]` | `completed` | Auto `[x]` | Comment: `Moved` or `Already in progress` or `Failed: <reason>`.
+
+---
+
+### Step 10: Post Start Comment
+
+1. Open checkpoint: set Step 10 → `in_progress`, Attempts +1, update `last_updated`.
+2. Post a start comment on the Asana task with the branch name and draft PR URL. Deduplicate by checking for an existing 🏁 comment for this branch. See `references/asana-patterns.md` for the comment format.
+3. Write checkpoint: Step 10 → `[x]` | `completed` | Auto `[x]` | Comment: `Posted` or `Skipped (duplicate)`.
+
+---
+
+### Step 11: Route to the Right Workflow
+
+1. Open checkpoint: set Step 11 → `in_progress`, Attempts +1, update `last_updated`.
+2. Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
+   - **"Bug"** → Invoke `superpowers:systematic-debugging` with full context as the bug report.
+   - **Anything else** (Feature Request, Tech Debt, etc.) → Invoke `feature-dev:feature-dev` with full context as the feature specification.
+   - **Category missing** → Prompt: "Is this a bug fix or a feature?"
+3. Write checkpoint: Step 11 → `[x]` | `completed` | Auto `[ ]` if category was missing, `[x]` otherwise | Comment: `feature-dev` or `systematic-debugging`. Update frontmatter: `workflow`.
+
+---
+
+## Pause Flow
+
+Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any step.
+
+Set the current step's State → `blocked` in the checkpoint before doing anything else. Then follow `references/checkpoints.md` Section 4: commit WIP, draft blocking question for user approval, post to Asana, push.
+
+## Important Notes
+
+- This skill starts work. It does not ship it. Shipping is handled by `ship-it`.
+- Include the task ID in branch names and commit messages for traceability.
+- Route all Asana API calls through the `asana-api` skill — no raw curl.
+- If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.
