@@ -2,11 +2,13 @@
 name: ship-it
 version: 0.1.0
 description: >
-  Thin orchestrator that ships completed work by calling sub-skills in sequence: pre-ship-check,
-  work-summary, create-pr, and asana-api. Contains no domain logic — all real work
-  lives in the sub-skills. Trigger when the user says things like "ship it", "we're done",
-  "let's wrap this up", "link this to asana", "create a PR and update asana",
-  or after completing a plan/task and wanting to finalize.
+  This skill should be used when development is complete and the work needs to be shipped:
+  the user says "ship it", "we're done", "ready to ship", "done with this feature", "let's wrap up",
+  "mark as in review", "create the PR", "link this to Asana", "create a PR and update Asana",
+  or "push this and close the ticket". Also triggered automatically by `start-task` and
+  `start-task-steps` once the downstream development workflow (feature-dev, fix-bug, brainstorm)
+  signals completion — in that case all session context (task GID, branch, draft PR URL) is
+  already available and must not be re-requested.
 ---
 
 # Ship It

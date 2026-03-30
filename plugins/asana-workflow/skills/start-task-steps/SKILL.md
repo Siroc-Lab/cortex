@@ -1,12 +1,15 @@
 ---
 name: start-task-steps
 description: >
-  This skill should be used when the user provides an Asana task URL and wants to begin working on it,
-  or says things like "start task", "work on this", "pick up this ticket", "begin this task", or pastes
-  an Asana URL with intent to start development. Also handles pausing blocked work ("park this",
-  "I'm blocked", "pause task", "put this on hold") and resuming paused tasks ("resume task",
-  "pick up where I left off", "continue [task-id]"). This is the entry point for the company's
-  development workflow — from ticket to code, with mandatory checkpoint tracking at every step.
+  This skill should be used when the user provides an Asana task URL and wants to begin working on it
+  with full step-by-step checkpoint tracking — "start task", "work on this", "pick up this ticket",
+  "let's start on [task-id]", "jump on this", "begin this task", or pastes an Asana URL with intent
+  to start development. Orchestrates the full lifecycle: validates sprint-readiness, sets up the branch
+  and draft PR, routes to the right development workflow (feature-dev, fix-bug, or brainstorm), and
+  ships via ship-it when done. Every step writes a checkpoint file so work can be paused and resumed
+  at any point. Also handles pausing ("park this", "I'm blocked", "pause task", "put this on hold")
+  and resuming ("resume task", "pick up where I left off", "continue [task-id]"). Prefer this variant
+  over start-task for long, complex, or interruptible tasks.
 argument-hint: <asana-task-url> [brainstorm|feature-dev]
 ---
 
