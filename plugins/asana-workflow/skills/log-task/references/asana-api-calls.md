@@ -36,7 +36,7 @@ curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   "https://app.asana.com/api/1.0/tasks"
 ```
 
-Save the returned `task_gid`. Send `"assignee": null` explicitly for Variant A.
+Save the returned `task_gid`. Send `"assignee": null` explicitly for Plan Only.
 
 ## 6b. Add to Sprint project
 

@@ -4,13 +4,13 @@
     {
       "id": 1,
       "prompt": "we just figured out that the export pipeline crashes when the input DataFrame is empty — missing empty-check before column iteration. I want to log this as an Asana ticket before we dig in and fix it",
-      "expected_output": "Skill infers Variant A (plan only). Attempts to load board config from ~/.claude/asana-workflow/<project-key>.json. If missing, asks for sprint and backlog GIDs. Discovers custom fields dynamically from the sprint project. Presents a full draft with title ≤72 chars, description capturing the root cause, priority set to highest available, sizing/estimate set to lowest, assignee unset (plan-only), product status = Assigned. Shows field options in brackets. User must confirm before any API calls. After confirmation, creates task in both boards, fetches the task ID, reports success with Asana URL, then offers to invoke start-task.",
+      "expected_output": "Skill infers Plan Only. Attempts to load board config from ~/.claude/asana-workflow/<project-key>.json. If missing, asks for sprint and backlog URLs. Discovers custom fields dynamically from the sprint project. Presents a full draft with title ≤72 chars, description capturing the root cause, priority set to highest available, sizing/estimate set to lowest, assignee unset (plan-only), product status = Assigned. Shows field options in brackets. User must confirm before any API calls. After confirmation, creates task in both boards, fetches the task ID, reports success with Asana URL, then asks if user wants to invoke start-task.",
       "files": []
     },
     {
       "id": 2,
       "prompt": "ok we just fixed the auth middleware bug — session tokens weren't being invalidated on logout because the Redis TTL wasn't being reset. I already updated the middleware and added a test. let's get this logged in asana and ship it",
-      "expected_output": "Skill infers Variant B (fix done). Loads or requests board config. Discovers fields. In the draft, assignee = current user, sizing/estimate reflect a small-to-medium fix (not the absolute lowest since there was real work done). Shows boards + field values with options. After confirmation, creates task in both boards, fetches task ID, creates a git worktree sibling to the repo on a new branch named <task-id>/fix-auth-session-invalidation (or similar slug), copies the changed files into the worktree, commits them, then invokes ship-it with the Asana task context threaded through.",
+      "expected_output": "Skill infers Fix Done. Loads or requests board config. Discovers fields. In the draft, assignee = current user, sizing/estimate reflect a small-to-medium fix (not the absolute lowest since there was real work done). Shows boards + field values with options. After confirmation, creates task in both boards, fetches task ID, creates a git worktree sibling to the repo on a new branch named <task-id>/fix-auth-session-invalidation (or similar slug), copies the changed files into the worktree, commits them, then asks if user wants to invoke ship-it with the Asana task context threaded through.",
       "files": []
     },
     {
