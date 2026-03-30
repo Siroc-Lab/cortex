@@ -8,6 +8,7 @@ description: >
   "log this to asana", "asana task for this", or after discovering and fixing an issue together.
   Do NOT trigger on generic logging requests ("log this error", "console.log", "log to Sentry")
   or on requests that reference an existing Asana task URL (those go to start-task or ship-it).
+argument-hint: "[sprint: <sprint-url>] [backlog: <backlog-url>]"
 ---
 
 # Log Task
@@ -19,6 +20,42 @@ Take something discovered or completed in conversation and formalize it as an As
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set — same as `start-task`. If missing, stop and guide setup.
 - `asana-api` skill for all Asana API operations.
 - `start-task` and `ship-it` skills available for routing.
+
+---
+
+## Step 0: Parse Arguments for URL Overrides
+
+Before doing anything else, scan `$ARGUMENTS` and the triggering message for Asana project URLs.
+
+**Extract GIDs from URLs** — Asana project URLs follow `app.asana.com/0/<project-gid>/...`. The GID is always the first path segment after `/0/`. Match with:
+
+```
+https://app\.asana\.com/0/(\d+)
+```
+
+**Disambiguate sprint vs backlog** using context words near each URL:
+
+| Trigger words (case-insensitive) | Detected as |
+|---|---|
+| "sprint", "current sprint", "new sprint", "use sprint" | sprint override |
+| "backlog", "product backlog", "use backlog", "new backlog" | backlog override |
+| No context words | ambiguous |
+
+If a URL is detected, resolve its project name via API before proceeding:
+
+```bash
+curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
+  "https://app.asana.com/api/1.0/projects/<gid>?opt_fields=name,workspace.gid"
+```
+
+Store the results as `sprint_override` and/or `backlog_override` (each with `gid` + `name`). If a workspace GID is returned, also store it as `workspace_override`.
+
+**Ambiguity rules:**
+- Two URLs with no context → ask once: "Which is the sprint board and which is the backlog?"
+- One URL with no context → ask: "Is this the sprint board or the backlog?"
+- URL that isn't a valid Asana project URL → ignore silently, do not block
+
+Carry any resolved overrides into Step 2.
 
 ---
 
@@ -65,7 +102,24 @@ basename "$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 }
 ```
 
+### Apply overrides from Step 0
+
+After loading (or failing to load) config, merge any overrides resolved in Step 0:
+
+- If `sprint_override` is set → replace `sprint_project_gid` and `sprint_project_name` in config
+- If `backlog_override` is set → replace `backlog_project_gid` and `backlog_project_name` in config
+- If `workspace_override` is set and config has no `workspace_gid` → set it
+
+If any override was applied, save the updated config immediately (see Config Save/Update section) and report:
+
+```
+Sprint board updated: ENG | Sprint 27.x  (was: ENG | Sprint 26.x)
+Config saved to ~/.claude/asana-workflow/<project-key>.json
+```
+
 ### If config is missing — ask directly
+
+If config is missing AND no overrides were provided for a board, ask for the missing pieces:
 
 ```
 No board config found for this project. I need two Asana project GIDs:
@@ -76,6 +130,8 @@ No board config found for this project. I need two Asana project GIDs:
 
 I'll save them to ~/.claude/asana-workflow/<project-key>.json (not in the repo).
 ```
+
+If overrides cover one board but not the other, ask only for the missing one.
 
 ---
 
@@ -261,13 +317,14 @@ If the ID field is not yet set (automation can take a moment), retry once after 
 
 ### Variant A — Plan Only
 
-Hand off to `start-task` with the new task URL:
+The task is created. Ask the user whether to proceed:
 
-> "Task logged. Ready to start work on it now? I'll invoke start-task."
+> "Task logged. Ready to start work on it now? [Y/n]"
 
-Invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`.
+**Wait for the user's response.**
 
-`start-task` will handle branch creation, validation, and workflow routing from there.
+- If yes → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`. It will handle branch creation, validation, and workflow routing.
+- If no → stop here. The task is in Asana; the user can start it later with `/start-task <url>`.
 
 ---
 
