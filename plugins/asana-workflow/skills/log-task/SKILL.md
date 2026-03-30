@@ -306,7 +306,7 @@ curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
 
 Look for a text-type custom field whose `display_value` matches the pattern `[A-Z]+-\d+` (uppercase prefix, hyphen, digits). Save this as `<task_id>`.
 
-If the ID field is not yet set (Asana automation typically assigns it within 5–10 seconds of the task being added to a project), wait 10 seconds and retry once. If still absent after the retry, derive a sensible prefix from context:
+If the ID field is not yet set (Asana automation typically assigns it within 5–10 seconds of the task being added to a project), retry up to 3 times waiting 10 seconds between each attempt. If still absent after all retries, derive a sensible prefix from context:
 - Bug fix → `fix/<slug>`
 - Feature → `feat/<slug>`
 - Tech debt / cleanup → `chore/<slug>`
