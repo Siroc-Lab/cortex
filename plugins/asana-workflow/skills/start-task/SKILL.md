@@ -23,7 +23,7 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc` — the Asana personal access token. If missing, stop and guide setup:
   > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
   > Get token from: https://app.asana.com/0/my-apps
-- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (required if using the `brainstorm` workflow for non-bug tasks)
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `project-qa:project-qa`, and optionally `superpowers:brainstorming` skills
 - The `asana-api` skill for all Asana API operations
 
 ## The Flow
@@ -138,7 +138,7 @@ These happen automatically — no permission needed.
 
 Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
 
-- **"Bug"** — Invoke `fix-bug` with the full task context. `fix-bug` is bundled — no dependency check needed.
+- **"Bug"** — Follow the verify → fix → verify loop (Steps 10a–10c below).
 - **Anything else** (Feature Request, Tech Debt, etc.):
   - If `$ARGUMENTS` contains `brainstorm` — invoke `superpowers:brainstorming` with the full context.
   - If `$ARGUMENTS` contains `feature-dev` — invoke `feature-dev:feature-dev` with the full context.
@@ -150,6 +150,24 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 - **Category missing** — Prompt: "Is this a bug fix or a feature?" then apply the routing above.
 
 The branch is already created and checked out — the downstream skill works on it directly.
+
+### Step 10a: Verify Bug (Bug category only)
+
+Invoke `project-qa:project-qa` in **investigate** mode with the bug description from the Asana ticket as the question and the SUT URL (if known from CLAUDE.md or task notes).
+
+- **Confirmed** (bug reproduced with evidence) → proceed to Step 10b, passing the full project-qa report as context.
+- **Cannot reproduce** → **stop**. Tell the operator the bug could not be reproduced. Let them decide: fix SUT setup, clarify the bug description, or skip verification and proceed to debugging anyway.
+
+### Step 10b: Fix Bug
+
+Invoke `fix-bug` with the project-qa report as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
+
+### Step 10c: Verify Fix
+
+After the fix is committed, re-invoke `project-qa:project-qa` in **verify** mode with the original reproduction steps from Step 10a.
+
+- **Pass** (behavior now matches expected) → confirmed fixed, proceed to Step 11.
+- **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10b for another debugging pass.
 
 **Handoff instruction:** When passing context to the downstream skill, include this explicitly:
 > "When this workflow is complete, return to `start-task` Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
