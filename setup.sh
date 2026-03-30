@@ -204,6 +204,53 @@ if [ -n "${ASANA_PERSONAL_ACCESS_TOKEN:-}" ]; then
   fi
 fi
 
+# Optional: additional Asana accounts
+if [ -n "${ASANA_PERSONAL_ACCESS_TOKEN:-}" ]; then
+  echo ""
+  read -rp "  Add additional Asana accounts (ASANA_TOKEN_<NAME>)? [y/N] " ADD_MORE
+  ADD_MORE=${ADD_MORE:-N}
+  if [[ "$ADD_MORE" =~ ^[Yy]$ ]]; then
+    while true; do
+      echo ""
+      read -rp "  Account name (e.g. 'work', 'client_x') — leave blank to stop: " ACCT_NAME
+      [ -z "$ACCT_NAME" ] && break
+
+      # Uppercase and prefix
+      ACCT_VAR="ASANA_TOKEN_$(printf "%s" "$ACCT_NAME" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Z0-9_' '_')"
+
+      if exists_in_profile "$ACCT_VAR"; then
+        warn "${ACCT_VAR} already exists in ${PROFILE} — skipping"
+        continue
+      fi
+
+      read -rp "  Paste token for ${ACCT_VAR}: " ACCT_TOKEN_INPUT
+      if [ -z "$ACCT_TOKEN_INPUT" ]; then
+        warn "No token provided — skipping ${ACCT_VAR}"
+        continue
+      fi
+
+      add_to_profile "$ACCT_VAR" "$ACCT_TOKEN_INPUT"
+
+      # Validate
+      ACCT_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+        -H "Authorization: Bearer $ACCT_TOKEN_INPUT" \
+        "https://app.asana.com/api/1.0/users/me")
+
+      if [ "$ACCT_HTTP" = "200" ]; then
+        ACCT_USER=$(curl -s -H "Authorization: Bearer $ACCT_TOKEN_INPUT" \
+          "https://app.asana.com/api/1.0/users/me?opt_fields=name,email" \
+          | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; print(f\"{d['name']} ({d['email']})\")" 2>/dev/null || echo "unknown")
+        pass "${ACCT_VAR} valid — ${ACCT_USER}"
+      elif [ "$ACCT_HTTP" = "401" ]; then
+        warn "${ACCT_VAR} token is invalid or expired (HTTP 401)"
+        info "Regenerate at: https://app.asana.com/0/my-apps"
+      else
+        warn "Asana API returned HTTP ${ACCT_HTTP} for ${ACCT_VAR} — could not verify"
+      fi
+    done
+  fi
+fi
+
 # ─────────────────────────────────────────────
 # Step 4: GitHub token for auto-updates
 # ─────────────────────────────────────────────

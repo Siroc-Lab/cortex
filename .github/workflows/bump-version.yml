@@ -1,0 +1,112 @@
+name: Bump Plugin Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: "Plugin name (must match folder under plugins/)"
+        required: true
+        default: "asana-workflow"
+      level:
+        description: "Semver level to bump"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version
+        id: bump
+        run: |
+          PLUGIN="${{ github.event.inputs.plugin }}"
+          LEVEL="${{ github.event.inputs.level }}"
+          PLUGIN_FILE="plugins/${PLUGIN}/.claude-plugin/plugin.json"
+          MARKETPLACE_FILE=".claude-plugin/marketplace.json"
+
+          if [ ! -f "$PLUGIN_FILE" ]; then
+            echo "ERROR: Plugin not found: $PLUGIN_FILE"
+            exit 1
+          fi
+
+          OLD_VERSION=$(python3 -c "import json; print(json.load(open('$PLUGIN_FILE'))['version'])")
+
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          case "$LEVEL" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+          NEW_VERSION="${major}.${minor}.${patch}"
+
+          # Update plugin.json
+          python3 - "$PLUGIN_FILE" "$NEW_VERSION" <<'EOF'
+          import sys, json
+          file, ver = sys.argv[1], sys.argv[2]
+          with open(file) as f:
+              data = json.load(f)
+          data['version'] = ver
+          with open(file, 'w') as f:
+              json.dump(data, f, indent=2)
+              f.write('\n')
+          EOF
+
+          # Sync the plugin entry in marketplace.json
+          python3 - "$MARKETPLACE_FILE" "$PLUGIN" "$NEW_VERSION" <<'EOF'
+          import sys, json
+          file, name, ver = sys.argv[1], sys.argv[2], sys.argv[3]
+          with open(file) as f:
+              data = json.load(f)
+          for p in data.get('plugins', []):
+              if p.get('name') == name:
+                  p['version'] = ver
+                  break
+          with open(file, 'w') as f:
+              json.dump(data, f, indent=2)
+              f.write('\n')
+          EOF
+
+          {
+            echo "old_version=$OLD_VERSION"
+            echo "new_version=$NEW_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        run: |
+          PLUGIN="${{ github.event.inputs.plugin }}"
+          OLD="${{ steps.bump.outputs.old_version }}"
+          NEW="${{ steps.bump.outputs.new_version }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add "plugins/${PLUGIN}/.claude-plugin/plugin.json" \
+                  .claude-plugin/marketplace.json
+
+          git commit -m "chore(${PLUGIN}): bump version ${OLD} → ${NEW}"
+          git tag "${PLUGIN}@${NEW}"
+          git push origin HEAD --follow-tags
+
+      - name: Summary
+        run: |
+          echo "### Version Bumped" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Plugin | \`${{ github.event.inputs.plugin }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Level  | \`${{ github.event.inputs.level }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Before | \`${{ steps.bump.outputs.old_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| After  | \`${{ steps.bump.outputs.new_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tag    | \`${{ github.event.inputs.plugin }}@${{ steps.bump.outputs.new_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
