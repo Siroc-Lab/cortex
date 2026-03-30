@@ -13,6 +13,7 @@ asana-workflow/
     ├── fix-bug/           ← Bug-fix lifecycle orchestrator (bundled)
     ├── git-check/         ← Git state validation (bundled)
     ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
+    ├── project-qa/        ← QA investigation & verification (bundled)
     ├── ship-it/           ← Shipping orchestrator (bundled)
     ├── start-task/        ← Entry point for dev workflow (bundled)
     └── work-summary/      ← Session summary (bundled)
@@ -26,6 +27,7 @@ Each skill follows: `skills/<name>/SKILL.md` + optional `references/` subdirecto
 start-task
   ├── asana-api          (fetch task, update status)
   ├── git-check          (validate git state)
+  ├── project-qa         (verify bug → verify fix loop)
   ├── [external] feature-dev:feature-dev    (route non-bug tasks)
   └── fix-bug                   (route bug tasks through orchestrator)
 

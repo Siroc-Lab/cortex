@@ -23,7 +23,7 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc` — the Asana personal access token. If missing, stop and guide setup:
   > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
   > Get token from: https://app.asana.com/0/my-apps
-- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `project-qa:project-qa`, and optionally `superpowers:brainstorming` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `project-qa`, and optionally `superpowers:brainstorming` skills
 - The `asana-api` skill for all Asana API operations
 
 ## The Flow
@@ -153,9 +153,9 @@ The branch is already created and checked out — the downstream skill works on 
 
 ### Step 10a: Verify Bug (Bug category only)
 
-Invoke `project-qa:project-qa` in **investigate** mode with the bug description from the Asana ticket as the question and the SUT URL (if known from CLAUDE.md or task notes).
+Invoke `project-qa` in **investigate** mode with the bug description from the Asana ticket as the question and the SUT URL (if known from CLAUDE.md or task notes).
 
-- **Confirmed** (bug reproduced with evidence) → proceed to Step 10b, passing the full project-qa report as context.
+- **Confirmed** (bug reproduced with evidence) → project-qa posts the QA report to the Asana task (Step 6 in project-qa). Proceed to Step 10b, passing the full report as context.
 - **Cannot reproduce** → **stop**. Tell the operator the bug could not be reproduced. Let them decide: fix SUT setup, clarify the bug description, or skip verification and proceed to debugging anyway.
 
 ### Step 10b: Fix Bug
@@ -164,7 +164,7 @@ Invoke `fix-bug` with the project-qa report as enriched context. This gives the 
 
 ### Step 10c: Verify Fix
 
-After the fix is committed, re-invoke `project-qa:project-qa` in **verify** mode with the original reproduction steps from Step 10a.
+After the fix is committed, re-invoke `project-qa` in **verify** mode with the original reproduction steps from Step 10a.
 
 - **Pass** (behavior now matches expected) → confirmed fixed, proceed to Step 11.
 - **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10b for another debugging pass.

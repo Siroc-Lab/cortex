@@ -97,7 +97,20 @@ See `references/reporting.md` for the full report structure. Every report includ
 5. **Source context** (if available) — File/line references
 6. **Recommendation** — Suggested fix or next steps
 
-The report is the artifact. No side effects — the operator decides what to do with it.
+### Step 6: Post QA Report to Asana
+
+When invoked from `start-task` (a task GID is available in context), post the report as an Asana comment via the `asana-api` skill. The comment should include:
+
+1. **Mode** — "QA Investigation" or "QA Verification (Pass/Fail)"
+2. **Answer** — the direct finding
+3. **Confidence** — Confirmed / Likely / Suspicion
+4. **Reproduction steps** — numbered list
+5. **Evidence summary** — what was captured (screenshots are attached to the task separately if the API supports it; otherwise, describe what was observed)
+6. **Recommendation** — suggested fix or next steps
+
+Format the comment as structured HTML (Asana rich text). This creates a permanent record on the ticket of what was found and the evidence behind it.
+
+If no task GID is in context (standalone invocation), skip this step — the report is the artifact and the operator decides what to do with it.
 
 ## Behavior Rules
 
