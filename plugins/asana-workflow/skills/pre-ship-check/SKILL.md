@@ -32,7 +32,27 @@ build: yarn build
 lint: yarn lint
 ```
 
-If `## Ship Checks` is missing or any of `test`, `build`, or `lint` are not declared, that is a **BLOCKING** finding — readiness cannot be verified without knowing the commands.
+If `## Ship Checks` is missing or any commands are not declared, **do not block** — instead scan CI pipelines to infer them (see below), then confirm with the user before running.
+
+### CI Pipeline Inference
+
+When commands are missing, scan for CI pipeline files in this order:
+1. `.github/workflows/*.yml` / `.yaml` — look for steps with `run:` containing test/build/lint keywords
+2. `.circleci/config.yml` — look for job steps
+3. `Makefile` — look for targets named `test`, `build`, `lint`, `check`
+4. `package.json` `scripts` — look for keys matching `test`, `build`, `lint`
+5. `Taskfile.yml` / `justfile` — look for matching tasks
+
+Extract the most specific matching command for each of `test`, `build`, `lint`. Then present inferred commands to the user for confirmation before running:
+
+> I found these commands from your CI pipeline — confirm or edit before I run them:
+> - lint: `yarn lint`
+> - build: `yarn build`
+> - test: `yarn test`
+>
+> Proceed with these? (You can skip any.)
+
+If no commands can be inferred for a given check after scanning all sources, mark that check as **SKIPPED (not configured)** — not blocking.
 
 ## Step 3: Run Project Commands
 
@@ -40,9 +60,9 @@ Run in this order (cheapest first):
 
 | # | Command | Severity | Notes |
 |---|---|---|---|
-| 1 | Lint (declared `lint:` command) | ADVISORY | Warn but don't block |
-| 2 | Build (declared `build:` command) | BLOCKING | Stop if fails |
-| 3 | Tests (declared `test:` command) | BLOCKING | Ask before running (may be slow) |
+| 1 | Lint (declared or inferred `lint` command) | ADVISORY | Warn but don't block |
+| 2 | Build (declared or inferred `build` command) | BLOCKING | Stop if fails |
+| 3 | Tests (declared or inferred `test` command) | BLOCKING | Ask before running (may be slow) |
 
 Before running the test suite, ask:
 
