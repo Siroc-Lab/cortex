@@ -97,18 +97,33 @@ See `references/reporting.md` for the full report structure. Every report includ
 5. **Source context** (if available) — File/line references
 6. **Recommendation** — Suggested fix or next steps
 
-### Step 6: Post QA Report to Asana
+### Step 6: Post QA Finding to Asana
 
-When invoked from `start-task` (a task GID is available in context), post the report as an Asana comment via the `asana-api` skill. The comment should include:
+Only posts in **investigate** mode when invoked from `start-task` (a task GID is available in context). Verify mode does not post — ship-it's `🤖 Done` already signals the fix landed, and failures loop back to fix-bug with no ticket update needed.
 
-1. **Mode** — "QA Investigation" or "QA Verification (Pass/Fail)"
-2. **Answer** — the direct finding
-3. **Confidence** — Confirmed / Likely / Suspicion
-4. **Reproduction steps** — numbered list
-5. **Evidence summary** — what was captured (screenshots are attached to the task separately if the API supports it; otherwise, describe what was observed)
-6. **Recommendation** — suggested fix or next steps
+Post a comment via the `asana-api` skill based on the investigation outcome:
 
-Format the comment as structured HTML (Asana rich text). This creates a permanent record on the ticket of what was found and the evidence behind it.
+#### Bug Confirmed
+
+Prefix: `🔍 Bug Confirmed`
+
+Include:
+1. **Root cause** — what's causing the behavior, with confidence level
+2. **Reproduction steps** — numbered, specific, followable by anyone
+3. **Evidence summary** — what was captured (screenshots, console errors, network traces)
+4. **Recommendation** — suggested fix or next steps
+
+#### Cannot Reproduce
+
+Prefix: `❓ Cannot Reproduce`
+
+Include:
+1. **What was tried** — the steps attempted to reproduce the reported behavior
+2. **What was observed instead** — actual behavior with evidence
+3. **Environment** — SUT URL, browser, any relevant config
+4. **Questions** — specific clarifications needed to retry (e.g., "Does this only happen with a specific account?", "Is there a particular screen size?")
+
+Format both as structured HTML (Asana rich text). This creates a permanent record on the ticket of what QA found before any fix work begins.
 
 If no task GID is in context (standalone invocation), skip this step — the report is the artifact and the operator decides what to do with it.
 
