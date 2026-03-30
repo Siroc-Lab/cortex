@@ -23,7 +23,7 @@ End-to-end Asana-driven development workflow: from ticket to shipped PR with aut
 | `work-summary` | Session recap for standups, handoffs, and PRs |
 | `create-pr` | Full PR lifecycle with Asana linking and reviewer assignment |
 | `asana-api` | Asana REST API patterns and common operations |
-| `log-task` | Creates an Asana task from work discovered or completed in conversation — fires `ship-it` automatically if the work is already done |
+| `log-task` | Creates an Asana task from work discovered or completed in conversation |
 
 ## Installation
 
