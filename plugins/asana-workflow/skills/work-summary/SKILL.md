@@ -1,5 +1,6 @@
 ---
 name: work-summary
+version: 0.1.0
 description: >
   This skill should be used when the user says "summarize my work", "what did I do", "session recap",
   "standup notes", "handoff", "write a summary", "what changed", "wrap up summary", "give me a recap",
@@ -38,8 +39,8 @@ After the body, append a **mandatory** stats line and attribution. This line is 
 ```
 
 - **Duration** — Estimated session duration (see Duration Measurement below). ALWAYS include this, even for short sessions (`~5m` is valid).
-- **Files changed** — Count of files modified/added/deleted from `git diff main...HEAD --stat`
-- **Commits** — Number of commits on the branch from `git log main..HEAD --oneline | wc -l`
+- **Files changed** — Count of files modified/added/deleted from `git diff $BASE...HEAD --stat`
+- **Commits** — Number of commits on the branch from `git log $BASE..HEAD --oneline | wc -l`
 - **Attribution** — `🤖 Done` on its own line is mandatory. It signals AI-assisted work is complete and ready for review.
 
 The stats line must follow this exact format. Do not inline file/commit counts into the body prose — they go on this dedicated line.
@@ -50,10 +51,18 @@ Do NOT include estimated cost.
 
 To build the summary, gather data from three sources:
 
+### Detect base branch
+
+```bash
+BASE=$(git rev-parse --abbrev-ref origin/HEAD 2>/dev/null | sed 's|origin/||' || echo "main")
+```
+
+Use `$BASE` in all subsequent git commands.
+
 ### Git diff for scope
 
 ```bash
-git diff main...HEAD --stat
+git diff $BASE...HEAD --stat
 ```
 
 Shows which files changed and how much. Use to ground the summary in concrete file/module names.
@@ -61,7 +70,7 @@ Shows which files changed and how much. Use to ground the summary in concrete fi
 ### Git log for narrative
 
 ```bash
-git log main..HEAD --oneline
+git log $BASE..HEAD --oneline
 ```
 
 Shows commit messages that tell the story of the work — its progression and intent.
@@ -81,8 +90,8 @@ Estimate session duration by combining two signals:
 
 1. **Git timestamps** — First and last commit on the branch define the time window:
    ```bash
-   git log main..HEAD --format="%ai" --reverse | head -1  # session start
-   git log main..HEAD --format="%ai" | head -1             # most recent work
+   git log $BASE..HEAD --format="%ai" --reverse | head -1  # session start
+   git log $BASE..HEAD --format="%ai" | head -1             # most recent work
    ```
 
 2. **Conversation turns** — Count user messages, estimate ~2-3 minutes each. This is the primary estimator.

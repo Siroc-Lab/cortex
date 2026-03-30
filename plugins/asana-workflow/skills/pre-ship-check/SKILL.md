@@ -1,5 +1,6 @@
 ---
 name: pre-ship-check
+version: 0.1.0
 description: >
   This skill should be used when the user says "am I ready to ship", "pre-flight check",
   "check before PR", "ready to merge", "pre-ship check", "can I ship this", "is this ready",
@@ -21,7 +22,7 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 
 Invoke `git-check`. If it returns blocking issues, stop and resolve them before continuing. Advisory warnings are presented to the user to decide whether to proceed.
 
-## Step 2: Ship Checks Configuration
+## Step 2: Run Project Commands
 
 Read the project's `CLAUDE.md` for declared test, build, and lint commands:
 

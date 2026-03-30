@@ -24,7 +24,7 @@ If resuming, check out the existing branch and skip branch creation. If starting
 
 ## Create Feature Branch
 
-Default to `main` as the base branch. Only prompt for a different base if the repo's default branch is something other than `main`, or if a different base branch preference has been indicated previously.
+Use the base branch confirmed by the user in Step 6c of start-task. Do not assume `main` — always use the explicitly chosen base.
 
 Inform (do not ask) when creating:
 

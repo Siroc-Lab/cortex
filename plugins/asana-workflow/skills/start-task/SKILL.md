@@ -1,5 +1,6 @@
 ---
 name: start-task
+version: 0.1.0
 description: >
   This skill should be used when the user provides an Asana task URL and wants to begin working on it,
   or says things like "start task", "work on this", "pick up this ticket", "begin this task", or pastes
@@ -7,7 +8,7 @@ description: >
   "I'm blocked", "pause task", "put this on hold") and resuming paused tasks ("resume task",
   "pick up where I left off", "continue [task-id]"). This is the entry point for the company's
   development workflow — from ticket to code, with checkpoint support for blocked work.
-argument-hint: <asana-task-url>
+argument-hint: <asana-task-url> [brainstorm|feature-dev]
 ---
 
 # Start Task
@@ -19,10 +20,19 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc` — the Asana personal access token. If missing, stop and guide setup:
   > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
   > Get token from: https://app.asana.com/0/my-apps
-- Access to `feature-dev:feature-dev` and `superpowers:systematic-debugging` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (required if using the `brainstorm` workflow for non-bug tasks)
 - The `asana-api` skill for all Asana API operations
 
 ## The Flow
+
+### Step 0: Check External Skill Dependencies
+
+Before doing anything else, check whether the external skills required for routing are installed. These are **not bundled** with this plugin.
+
+- **`feature-dev@claude-plugins-official`** — required for non-bug tasks using the `feature-dev` workflow
+- **`superpowers@claude-plugins-official`** — required for Bug tasks (`fix-bug` uses `systematic-debugging`) and for non-bug tasks using the `brainstorm` workflow
+
+If either is missing, warn the user and ask whether to install now or continue. This is an **advisory blocking step** — wait for the user's answer before proceeding. See **`references/skill-dependencies.md`** for check instructions, install commands, and warning message templates.
 
 ### Step 1: Get the Asana Task URL
 
@@ -60,9 +70,33 @@ After fetching remote refs, check for `.claude/checkpoints/<task-id>.md`. If fou
 
 On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint.
 
+### Step 6b: Ask About Worktree (BLOCKING)
+
+Before creating the branch, ask the user whether to use a git worktree. This is a **blocking** question — wait for an explicit answer before proceeding.
+
+Present the choice:
+
+> Would you like to work in a git worktree (isolated copy of the repo) or directly in the current directory?
+> - **Worktree** _(recommended for parallel work — keeps main directory clean)_
+> - **Current directory**
+
+If the user chooses worktree, use `EnterWorktree` to create an isolated copy. The branch will be created inside the worktree in Step 7.
+
+### Step 6c: Confirm Base Branch (BLOCKING)
+
+Ask the user which branch to base the new branch on. This is a **blocking** question — wait for an explicit answer before proceeding.
+
+Present the choice:
+
+> Which branch should `<task-id>/<slug>` be based on?
+> - **main** _(default — latest stable base)_
+> - Another branch _(enter branch name)_
+
+Default to `main` only after the user confirms. If the user specifies a different base branch, use that instead. Record the chosen base branch for Step 7.
+
 ### Step 7: Create Feature Branch
 
-Create a branch using the task ID and a slug from the task name. Default to `main` as base. Inform (do not ask) when creating. See **`references/git-workflow.md`** for commands and naming convention.
+Create a branch using the task ID and a slug from the task name. Use the **base branch confirmed in Step 6c** (not assumed `main`). Inform (do not ask) when creating. See **`references/git-workflow.md`** for commands and naming convention.
 
 ### Step 8: Create Draft PR
 
@@ -101,9 +135,16 @@ These happen automatically — no permission needed.
 
 Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
 
-- **"Bug"** — Invoke `superpowers:systematic-debugging` with the full context as the bug report.
-- **Anything else** (Feature Request, Tech Debt, etc.) — Invoke `feature-dev:feature-dev` with the full context as the feature specification.
-- **Category missing** — Prompt: "Is this a bug fix or a feature?"
+- **"Bug"** — Invoke `fix-bug` with the full task context. `fix-bug` is bundled — no dependency check needed.
+- **Anything else** (Feature Request, Tech Debt, etc.):
+  - If `$ARGUMENTS` contains `brainstorm` — invoke `superpowers:brainstorming` with the full context.
+  - If `$ARGUMENTS` contains `feature-dev` — invoke `feature-dev:feature-dev` with the full context.
+  - If no workflow argument was provided — ask (blocking):
+    > "How do you want to approach this?
+    > 1. Brainstorm the design first (`superpowers:brainstorming`)
+    > 2. Go straight to implementation (`feature-dev:feature-dev`)"
+    Wait for explicit answer before routing. No default assumed.
+- **Category missing** — Prompt: "Is this a bug fix or a feature?" then apply the routing above.
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
@@ -120,6 +161,7 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 
 ## Reference Files
 
+- **`references/skill-dependencies.md`** — External plugin dependencies, install commands, check instructions
 - **`references/validation-rules.md`** — Sprint-readiness checks, failure display, skip rules
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention

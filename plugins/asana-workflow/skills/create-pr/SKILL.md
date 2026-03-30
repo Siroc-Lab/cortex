@@ -1,5 +1,6 @@
 ---
 name: create-pr
+version: 0.1.0
 description: >
   This skill should be used when the user says "create a PR", "open a pull request", "make a PR",
   "push and create PR", "open PR for this", "submit a PR", "PR this branch", "let's get this reviewed",
@@ -24,7 +25,7 @@ All inputs are optional. When missing, derive them automatically or prompt the u
 
 | Input | Source (orchestrator) | Source (standalone) |
 |---|---|---|
-| Summary (bullets) | From `work-summary` output | Generated from `git log main..HEAD --oneline` and `git diff main...HEAD --stat` |
+| Summary (bullets) | From `work-summary` output | Generated from `git log $BASE..HEAD --oneline` and `git diff $BASE...HEAD --stat` |
 | What Changed | From `work-summary` output | Generated from git diff |
 | How to Test | From `work-summary` output (may be absent) | Omitted unless obvious from changes |
 | Asana task URL | Passed by `ship-it` | Prompt user: "Is there an Asana task URL for this? (press Enter to skip)" |
@@ -167,7 +168,7 @@ EOF
 Add flags as needed:
 - `--assignee @me` — always included to self-assign the PR to the creator
 - `--reviewer user1,user2` — if reviewers are specified
-- `--base main` — if the target branch isn't the default
+- `--base $BASE` — if the target branch isn't the default (detect with `git rev-parse --abbrev-ref origin/HEAD | sed 's|origin/||'`)
 
 ### Draft PR from start-task (promote to ready)
 
@@ -225,6 +226,6 @@ gh pr edit <pr-number> --add-reviewer user1
 
 - **`gh` not installed or not authenticated** — Tell the user: "The `gh` CLI is not available or not authenticated. Run `gh auth login` first."
 - **`gh pr create` fails** — Check: Is the branch pushed? Are there commits ahead of the base branch? Is there already a PR for this branch? Report the specific error.
-- **No commits on branch** — If `git log main..HEAD` is empty, there's nothing to PR. Tell the user.
+- **No commits on branch** — If `git log $BASE..HEAD` is empty, there's nothing to PR. Tell the user.
 - **Merge conflicts with base** — Warn the user but don't block PR creation. GitHub will show the conflict status.
 - Never silently skip an error. Always report what failed and suggest a fix.
