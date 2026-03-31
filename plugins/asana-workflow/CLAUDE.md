@@ -13,7 +13,9 @@ asana-workflow/
     ├── fix-bug/           ← Bug-fix lifecycle orchestrator (bundled)
     ├── git-check/         ← Git state validation (bundled)
     ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
-    ├── project-qa/        ← QA investigation & verification (bundled)
+    ├── generic-qa/        ← Shared QA process & references (not a skill — used by web-qa, mobile-qa)
+    ├── web-qa/            ← Web QA investigation & verification (bundled)
+    ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, placeholder)
     ├── ship-it/           ← Shipping orchestrator (bundled)
     ├── start-task/        ← Entry point for dev workflow (bundled)
     └── work-summary/      ← Session summary (bundled)
@@ -27,7 +29,7 @@ Each skill follows: `skills/<name>/SKILL.md` + optional `references/` subdirecto
 start-task
   ├── asana-api          (fetch task, update status)
   ├── git-check          (validate git state)
-  ├── project-qa         (verify bug → verify fix loop)
+  ├── web-qa             (verify bug → verify fix loop, extends generic-qa)
   ├── [external] feature-dev:feature-dev    (route non-bug tasks)
   └── fix-bug                   (route bug tasks through orchestrator)
 
@@ -41,6 +43,16 @@ ship-it
   ├── work-summary       (session summary)
   └── create-pr          (open PR)
 ```
+
+generic-qa (shared markdown, not a skill)
+  ├── process.md         (universal QA flow)
+  └── references/        (reporting, investigation)
+
+web-qa (extends generic-qa)
+  └── references/        (Chrome DevTools MCP tooling, URL discovery, DOM/console/network)
+
+mobile-qa (extends generic-qa, placeholder)
+  └── references/        (mobile MCP capability contract, app discovery, accessibility tree/gestures)
 
 ## External Dependencies
 
