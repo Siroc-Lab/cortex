@@ -157,7 +157,7 @@ Determine which QA skill to invoke. Check in order:
 
 1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa` or `qa-skill: mobile-qa`). If found, use it.
 2. **Project signals** — infer from project files:
-   - `package.json`, `vite.config.*`, `next.config.*`, `tsconfig.json` → `web-qa`
+   - `package.json` (without React Native), `vite.config.*`, `next.config.*` → `web-qa`
    - `.xcodeproj`, `.xcworkspace`, `Info.plist` → `mobile-qa`
    - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
    - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
