@@ -12,6 +12,8 @@ argument-hint: <app-bundle-id-or-device>
 
 Investigate questions and problems in running **mobile** applications (iOS or Android) using a mobile testing MCP.
 
+> **Placeholder:** This skill defines the structure and capability contract but is not yet wired into `start-task` routing. Contributors should customize `references/tooling.md` with their preferred MCP server. `start-task` currently defaults to `web-qa` for bug verification.
+
 ## Base Process
 
 Read and follow `../generic-qa/process.md` as the QA process. This skill provides the mobile platform bindings below.

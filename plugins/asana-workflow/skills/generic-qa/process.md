@@ -60,7 +60,7 @@ Ask the operator about any additional context for the problem.
 
 **Investigate mode (default):**
 
-Reproduce the reported behavior by observing the SUT. Use the platform extension's `references/investigation.md` for available observation techniques. Trace the root cause. See `references/investigation.md` (in this directory) for generic investigation guidance.
+Reproduce the reported behavior by observing the SUT. Use the platform extension's `references/investigation.md` for available observation techniques. Trace the root cause. See `../generic-qa/references/investigation.md` for generic investigation guidance.
 
 If source code is available, cross-reference to explain *why* the behavior occurs.
 
