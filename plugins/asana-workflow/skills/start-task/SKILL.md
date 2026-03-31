@@ -23,7 +23,7 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc` — the Asana personal access token. If missing, stop and guide setup:
   > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
   > Get token from: https://app.asana.com/0/my-apps
-- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa`, and optionally `superpowers:brainstorming` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa` or `mobile-qa` (resolved at Step 10a), and optionally `superpowers:brainstorming` skills
 - The `asana-api` skill for all Asana API operations
 
 ## The Flow
@@ -151,23 +151,40 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
-### Step 10a: Verify Bug (Bug category only)
+### Step 10a: Resolve QA Skill (Bug category only)
 
-Invoke `web-qa` in **investigate** mode with the bug description from the Asana ticket as the question and the SUT URL (if known from CLAUDE.md or task notes).
+Determine which QA skill to invoke. Check in order:
 
-- **Confirmed** (bug reproduced with evidence) → web-qa posts the QA report to the Asana task (Step 6 in the generic-qa process). Proceed to Step 10b, passing the full report as context.
+1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa` or `qa-skill: mobile-qa`). If found, use it.
+2. **Project signals** — infer from project files:
+   - `package.json`, `vite.config.*`, `next.config.*`, `tsconfig.json` → `web-qa`
+   - `.xcodeproj`, `.xcworkspace`, `Info.plist` → `mobile-qa`
+   - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
+   - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
+3. **Ambiguous or no signal** — ask the operator (blocking):
+   > "Which QA skill should I use for this bug?
+   > 1. `web-qa` (browser-based, Chrome DevTools MCP)
+   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)"
+
+Use the resolved QA skill for both investigate (Step 10b) and verify (Step 10d) invocations.
+
+### Step 10b: Verify Bug
+
+Invoke the resolved QA skill in **investigate** mode with the bug description from the Asana ticket as the question and the SUT identifier (URL or app bundle ID, if known from CLAUDE.md or task notes).
+
+- **Confirmed** (bug reproduced with evidence) → the QA skill posts the report to the Asana task (Step 6 in the generic-qa process). Proceed to Step 10c, passing the full report as context.
 - **Cannot reproduce** → **stop**. Tell the operator the bug could not be reproduced. Let them decide: fix SUT setup, clarify the bug description, or skip verification and proceed to debugging anyway.
 
-### Step 10b: Fix Bug
+### Step 10c: Fix Bug
 
-Invoke `fix-bug` with the web-qa report as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
+Invoke `fix-bug` with the QA report as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
 
-### Step 10c: Verify Fix
+### Step 10d: Verify Fix
 
-After the fix is committed, re-invoke `web-qa` in **verify** mode with the original reproduction steps from Step 10a.
+After the fix is committed, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b.
 
 - **Pass** (behavior now matches expected) → confirmed fixed, proceed to Step 11.
-- **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10b for another debugging pass.
+- **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10c for another debugging pass.
 
 **Handoff instruction:** When passing context to the downstream skill, include this explicitly:
 > "When this workflow is complete, return to `start-task` Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
