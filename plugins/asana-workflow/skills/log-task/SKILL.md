@@ -17,8 +17,7 @@ Take something discovered or completed in conversation and formalize it as an As
 
 ## Prerequisites
 
-- `$ASANA_PERSONAL_ACCESS_TOKEN` env var set — same as `start-task`. If missing, stop and guide setup.
-- `asana-api` skill for all Asana API operations.
+- `asana-api` skill for all Asana API operations — route all Asana API calls through it, no raw curl.
 - `start-task` and `ship-it` skills available for routing.
 
 ---
@@ -246,3 +245,11 @@ Follow the worktree creation and file copy steps in `references/worktree-flow.md
 Thread the Asana task GID and URL so `ship-it` can skip re-asking:
 - Task GID: `<task_gid>`
 - Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
+
+---
+
+## Step 8: Harvest Reminder
+
+> "Don't forget to move any Harvest time logged for this work to **<task_id>: <task_title>**."
+
+Do not attempt to interact with Harvest directly — this step is advisory only.
