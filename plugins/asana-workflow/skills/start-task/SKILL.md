@@ -20,9 +20,7 @@ Take an Asana task, validate it's ready for development, understand the work, se
 
 ## Prerequisites
 
-- `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc` — the Asana personal access token. If missing, stop and guide setup:
-  > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
-  > Get token from: https://app.asana.com/0/my-apps
+- `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
 - Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (required if using the `brainstorm` workflow for non-bug tasks)
 - The `asana-api` skill for all Asana API operations
 
@@ -183,7 +181,6 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done.
 - Include the task ID in branch names and commit messages for traceability.
 - Route all Asana API calls through the `asana-api` skill — no raw curl.
-- If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.
 
 ## Reference Files
 

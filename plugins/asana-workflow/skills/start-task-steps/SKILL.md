@@ -36,9 +36,7 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 
 ## Prerequisites
 
-- `$ASANA_PERSONAL_ACCESS_TOKEN` env var set in `~/.zshrc`. If missing, stop and guide setup:
-  > Add to `~/.zshrc`: `export ASANA_PERSONAL_ACCESS_TOKEN="your-asana-token-here"`
-  > Get token from: https://app.asana.com/0/my-apps
+- `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
 - Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (required if using the `brainstorm` workflow for non-bug tasks)
 - `fix-bug` is bundled — no external dependency for bug tasks
 - The `asana-api` skill for all Asana API operations
@@ -272,4 +270,3 @@ Set the current step's State → `blocked` in the checkpoint before doing anythi
 - This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done (Step 12).
 - Include the task ID in branch names and commit messages for traceability.
 - Route all Asana API calls through the `asana-api` skill — no raw curl.
-- If `$ASANA_PERSONAL_ACCESS_TOKEN` is not set, stop and guide configuration before proceeding.
