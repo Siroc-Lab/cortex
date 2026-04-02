@@ -75,3 +75,5 @@ These skills are included in the `asana-workflow` plugin itself:
 | `asana-workflow:work-summary` | Session summary |
 | `asana-workflow:create-pr` | PR creation |
 | `asana-workflow:ship-it` | Shipping orchestrator |
+| `asana-workflow:web-qa` | Web QA investigation & verification (extends generic-qa) |
+| `asana-workflow:mobile-qa` | Mobile QA investigation & verification (extends generic-qa, placeholder) |
