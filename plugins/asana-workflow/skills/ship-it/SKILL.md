@@ -27,7 +27,7 @@ Thin orchestrator that calls sub-skills in sequence to ship completed work. This
 ### External tools
 
 - `gh` CLI authenticated for GitHub
-- `$ASANA_PERSONAL_ACCESS_TOKEN` env var for Asana API
+- `asana-api` skill for Asana API operations — handles token resolution and setup guidance.
 
 ## Context Threading
 

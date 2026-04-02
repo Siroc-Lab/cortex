@@ -56,6 +56,55 @@ Authorization: Bearer $ASANA_TOKEN
 
 ## Common Operations
 
+### Fetch Current User
+
+```bash
+curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
+  "https://app.asana.com/api/1.0/users/me?opt_fields=gid,name,email"
+```
+
+### Fetch Project Custom Field Settings
+
+Returns all custom field definitions for a project — field GIDs, names, types, and enum options. Use this to discover what fields exist before creating or updating tasks.
+
+```bash
+curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
+  "https://app.asana.com/api/1.0/projects/<project-gid>/custom_field_settings\
+?opt_fields=custom_field.gid,custom_field.name,custom_field.type,\
+custom_field.enum_options,custom_field.enum_options.gid,custom_field.enum_options.name"
+```
+
+### Create Task
+
+**Do NOT include `custom_fields` in this call** — the Asana API rejects them until the task belongs to a project. Set custom fields via **Update Custom Field** after adding to a project.
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": {
+      "name": "<title>",
+      "notes": "<description>",
+      "workspace": "<workspace_gid>",
+      "assignee": "<user_gid or null>"
+    }
+  }' \
+  "https://app.asana.com/api/1.0/tasks"
+```
+
+Save the returned `gid` as `<task_gid>`.
+
+### Add Task to Project
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"data":{"project":"<project-gid>"}}' \
+  "https://app.asana.com/api/1.0/tasks/<task-gid>/addProject"
+```
+
+A task can belong to multiple projects — call this once per project.
+
 ### Fetch Task Details
 
 ```bash
