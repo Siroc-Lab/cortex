@@ -18,7 +18,7 @@ Minimize tool calls for fluid, natural interaction:
 Screenshot after each action for step-by-step verification. Use only when:
 - Exercising the **fixed or created** part of the app
 - Operator explicitly requests it
-- Unexpected state — need to understand what's on screen
+- Unexpected state — need to understand what is on screen
 
 At the **assertion point**, always take a screenshot regardless of mode.
 
@@ -30,17 +30,11 @@ Use to find interaction targets and verify element presence/absence after action
 
 ## Gestures
 
-All coordinate-based. Get coordinates from accessibility tree bounds — calculate center: `(x + width/2, y + height/2)`.
+All gestures are coordinate-based. Get element bounds from `mobile_list_elements_on_screen`, calculate center: `x + width/2`, `y + height/2`. **Never hardcode coordinates** — always get fresh bounds when the screen changes.
 
-| Tool | Use |
-|---|---|
-| `mobile_click_on_screen_at_coordinates` | Tap buttons, select items |
-| `mobile_swipe_on_screen` | Scroll, navigate, dismiss |
-| `mobile_long_press_on_screen_at_coordinates` | Context menus, drag |
-| `mobile_type_keys` | Text input (tap field first to focus) |
-| `mobile_press_button` | System buttons — iOS: `home`, `lock`. Android: `home`, `back`, `recent`, `volume_up/down` |
-
-**Never hardcode coordinates** — always get fresh bounds when the screen changes.
+Tool names and parameters are in the MCP schema (use `ToolSearch` to load). Key non-obvious tips:
+- **Tap before typing** — focus the input field with a tap before calling `mobile_type_keys`.
+- **Android back button** — `mobile_press_button` with `back` is essential for navigation, dismissing dialogs, and closing keyboards. iOS has no equivalent (use UI buttons or swipe gestures).
 
 ## Navigation Patterns
 
