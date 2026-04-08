@@ -204,13 +204,29 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
 
 **Handoff instruction (non-bug tasks only):** When passing context to `feature-dev` or `brainstorming`, include:
-> "When this workflow is complete, return to `start-task` Step 11. Do not end the session — there is one more step."
+> "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
+
+### Step 10e: QA Verification (Non-Bug Tasks)
+
+**Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
+
+After the development workflow signals completion, ask the operator:
+
+> "Implementation is complete. The changes can be visually verified before shipping — I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.
+>
+> Run QA verification? [yes / skip]"
+
+If **yes**:
+1. Resolve the QA skill (Step 10a, if not already resolved).
+2. Invoke the QA skill in **investigate** mode with a summary of what was built/changed.
+3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
+4. Proceed to Step 11.
+
+If **skip**, proceed directly to Step 11. ship-it will offer one more chance (Step 2) if no QA evidence is found.
 
 ### Step 11: Ship It
 
-**This step runs after QA verification (Step 10d for bugs) or after the development workflow completes (non-bugs).** Do not wait for the user to ask.
-
-For non-bug tasks, `ship-it` handles QA verification internally (Step 2) — start-task does not need to prompt for it.
+**This step runs after QA verification (Step 10d for bugs, Step 10e for non-bugs) or when the operator skips QA.** Do not wait for the user to ask.
 
 Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
 
