@@ -56,7 +56,7 @@ with these explicit requirements:
 
 **This step cannot be skipped under any circumstance.**
 
-After TDD passes, return to `start-task` Step 10d — invoke the resolved QA skill in **verify** mode with the original reproduction steps. The QA skill will rebuild, deploy, and replay the reproduction steps.
+After TDD passes, invoke the resolved QA skill in **verify** mode with the original reproduction steps. The QA skill will rebuild, deploy, and replay the reproduction steps.
 
 - **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 4.
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana. Return to Step 1 for another debugging pass. Do NOT proceed to Step 4.

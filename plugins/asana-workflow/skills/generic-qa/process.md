@@ -32,11 +32,11 @@ Two invocation modes, selected by `$ARGUMENTS`:
 
 When a task GID is in context, create a directory to persist evidence files:
 
-```
-/tmp/qa-evidence/<task-gid>/
+```bash
+mkdir -p /tmp/qa-evidence/<task-gid>/
 ```
 
-If no task GID (standalone invocation), use `/tmp/qa-evidence/<timestamp>/`.
+If no task GID (standalone invocation), use `/tmp/qa-evidence/<timestamp>/` instead.
 
 All assertion-point screenshots and recordings go here with descriptive names (e.g., `bug-reproduced.png`, `fix-verified.png`, `flow-recording.mp4`). Platform extensions should use their save-to-file tools (not inline-only capture) for evidence that needs to be uploaded.
 
@@ -147,16 +147,6 @@ Include:
 2. **Result** — behavior still matches original actual
 3. **Evidence** — reference to attached screenshot/video
 
-#### Feature Completion
-
-When QA is invoked for a **non-bug task** (feature, tech debt, etc.) to verify UI behavior, post:
-
-Prefix: `✅ QA Verification — Feature Complete`
-
-Include:
-1. **What was verified** — the flow or behavior checked
-2. **Evidence** — reference to attached screenshot/video
-
 #### Evidence Upload
 
 After posting the comment, upload all evidence files from the evidence directory to the task using the `asana-api` Upload Attachment operation. This creates a permanent visual record on the ticket.
@@ -176,12 +166,12 @@ Format all comments as structured HTML (Asana rich text).
 
 ## Red Flags
 
-You are off-track if:
-- You're reading source code without having opened the app
-- You're reporting "Likely" without attempting reproduction
-- You accepted a tooling failure without telling the operator
-- You're investigating beyond what the operator asked
-- You hit a blocker and caveated your report instead of asking for help
+Off-track indicators:
+- Reading source code without having opened the app
+- Reporting "Likely" without attempting reproduction
+- Accepting a tooling failure without telling the operator
+- Investigating beyond what the operator asked
+- Hitting a blocker and caveating the report instead of asking for help
 
 ## Integration
 

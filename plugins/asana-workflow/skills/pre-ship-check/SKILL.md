@@ -37,7 +37,7 @@ This gate cannot be overridden. A bug fix without runtime verification evidence 
 
 Invoke `git-check`. If it returns blocking issues, stop and resolve them before continuing. Advisory warnings are presented to the user to decide whether to proceed.
 
-## Step 3: Run Project Commands
+## Step 3: Resolve Project Commands
 
 Scan CI pipelines to infer test, build, and lint commands (see below), then confirm with the user before running.
 
