@@ -216,13 +216,9 @@ After the development workflow signals completion, ask the operator:
 >
 > Run QA verification? [yes / skip]"
 
-If **yes**:
-1. Resolve the QA skill (Step 10a, if not already resolved).
-2. Invoke the QA skill in **investigate** mode with a summary of what was built/changed.
-3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
-4. Proceed to Step 11.
+If **yes** — resolve the QA skill (Step 10a, if not already resolved) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
-If **skip**, proceed directly to Step 11. ship-it will offer one more chance (Step 2) if no QA evidence is found.
+If **skip** — proceed to Step 11. ship-it will offer one more chance if no QA evidence is found.
 
 ### Step 11: Ship It
 
