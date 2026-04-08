@@ -192,19 +192,19 @@ Invoke the resolved QA skill in **investigate** mode with the bug description fr
 
 ### Step 10c: Fix Bug
 
-Invoke `fix-bug` with the QA report as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
+Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
 
-### Step 10d: Verify Fix
+`fix-bug` returns after root cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (Steps 10d and 11).
 
-After the fix is committed, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b.
+### Step 10d: Verify Fix (BLOCKING)
 
-- **Pass** (behavior now matches expected) → confirmed fixed, proceed to Step 11.
-- **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10c for another debugging pass.
+**This step cannot be skipped.** After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b. The QA skill will rebuild, deploy, and replay the steps.
 
-**Handoff instruction:** When passing context to the downstream skill, include this explicitly:
-> "When this workflow is complete, return to `start-task` Step 10e (for non-bug tasks) or Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
+- **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
+- **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
 
-This ensures the downstream skill knows control must return here rather than closing out.
+**Handoff instruction (non-bug tasks only):** When passing context to `feature-dev` or `brainstorming`, include:
+> "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
 
 ### Step 10e: QA Verification (Non-Bug Tasks)
 
