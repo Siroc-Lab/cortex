@@ -204,30 +204,13 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
 
 **Handoff instruction (non-bug tasks only):** When passing context to `feature-dev` or `brainstorming`, include:
-> "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
-
-### Step 10e: QA Verification (Non-Bug Tasks)
-
-**Applies to non-bug tasks only** (Feature Request, Tech Debt, etc.). Bug tasks already have QA via Steps 10b/10d.
-
-After the development workflow (feature-dev or brainstorm) signals completion, ask the operator before proceeding to ship-it:
-
-> "Development is complete. Would you like me to run QA to verify the changes before shipping?
-> This will build, deploy, and visually verify the affected flows. Evidence will be uploaded to the Asana task.
-> - **Yes** — run QA verification
-> - **Skip** — proceed to ship-it without QA"
-
-If the operator chooses **Yes**:
-1. Resolve the QA skill (Step 10a, if not already resolved).
-2. Invoke the QA skill in **investigate** mode with a description of what was built/changed.
-3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
-4. Proceed to Step 11.
-
-If the operator chooses **Skip**, proceed directly to Step 11.
+> "When this workflow is complete, return to `start-task` Step 11. Do not end the session — there is one more step."
 
 ### Step 11: Ship It
 
-**This step runs after QA verification (Step 10d for bugs, Step 10e for non-bugs) or when the operator skips QA.** Do not wait for the user to ask.
+**This step runs after QA verification (Step 10d for bugs) or after the development workflow completes (non-bugs).** Do not wait for the user to ask.
+
+For non-bug tasks, `ship-it` handles QA verification internally (Step 2) — start-task does not need to prompt for it.
 
 Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
 

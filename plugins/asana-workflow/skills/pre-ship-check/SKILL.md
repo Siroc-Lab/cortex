@@ -18,20 +18,27 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 - **Standalone** — The user asks "am I ready to ship?" and wants a full status report.
 - **Orchestrator step** — Called by `ship-it` as its first step. Blocking findings halt the pipeline.
 
-## Step 1: QA Verification Gate (Bug Tasks)
+## Step 1: QA Verification Gate
 
-**Only applies when a task GID is in context and the task category is Bug.**
+**Only applies when a task GID is in context.**
 
-Before any other checks, verify that QA verification has passed by checking the Asana task's comments (via `asana-api` Fetch Task Stories) for a comment containing `✅ QA Verification — PASSED`.
+Before any other checks, look for a QA verification comment on the Asana task (via `asana-api` Fetch Task Stories). Search for comments containing `✅ QA Verification`.
+
+### Bug tasks
 
 - **Found** → QA gate passes. Proceed to Step 2.
 - **Not found** → **BLOCKING**. Report:
   > QA verification has not passed for this bug task. The fix must be verified via the QA skill before shipping.
-  > Run the verify step (start-task Step 10d or fix-bug Step 3) to generate the verification.
 
 This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
 
-**Skip when:** task is not a Bug category, or no task GID is in context.
+### Non-bug tasks (Feature Request, Tech Debt, etc.)
+
+- **Found** → QA gate passes. Proceed to Step 2.
+- **Not found** → **ADVISORY**. Report:
+  > No QA verification found for this task. Visual verification with evidence upload is available.
+
+**Skip when:** no task GID is in context.
 
 ## Step 2: Git State Validation
 
