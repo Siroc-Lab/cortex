@@ -1,42 +1,77 @@
 # Mobile Investigation Techniques
 
-Mobile testing MCP observation capabilities. For generic investigation guidance (source code cross-referencing, completion criteria, anti-patterns), see `../../generic-qa/references/investigation.md`.
+Mobile-specific observation using mobile-mcp. For generic guidance (source cross-referencing, completion criteria), see `../../generic-qa/references/investigation.md`.
 
-## Accessibility Tree Inspection
-- List all visible UI elements with their labels, types, states, and bounds
-- This is the mobile equivalent of DOM inspection — the primary way to understand what's on screen
-- Check element states: enabled/disabled, selected, focused, accessibility labels
-- Use element bounds (coordinates) to inform tap/swipe actions
+## Interaction Modes
 
-## Gesture Interaction
-- **Tap** — press buttons, select items, navigate
-- **Swipe** — scroll lists, navigate between screens, dismiss modals
-- **Long press** — trigger context menus, initiate drag operations
-- **Pinch** — zoom in/out (if supported by MCP)
-- **Type** — fill text inputs, search fields
+### Fast mode (default)
 
-Gestures are coordinate-based in most mobile MCPs. Use the accessibility tree to find element bounds, then tap at the center of the element's bounding box.
+Minimize tool calls for fluid, natural interaction:
+
+- Query accessibility tree **once per screen**, reuse coordinates until the screen changes.
+- **Skip screenshots** between actions — only screenshot at the assertion point.
+- Batch sequential actions on the same screen (tap field → type → tap button) without re-querying.
+- Re-query the tree only after navigation, modal appear/dismiss, or list load.
+
+### Standard mode
+
+Screenshot after each action for step-by-step verification. Use only when:
+- Exercising the **fixed or created** part of the app
+- Operator explicitly requests it
+- Unexpected state — need to understand what's on screen
+
+At the **assertion point**, always take a screenshot regardless of mode.
+
+## Accessibility Tree
+
+`mobile_list_elements_on_screen` — the primary way to understand what's on screen. Returns element labels, types, states, accessibility IDs, and bounding boxes.
+
+Use to find interaction targets and verify element presence/absence after actions.
+
+## Gestures
+
+All coordinate-based. Get coordinates from accessibility tree bounds — calculate center: `(x + width/2, y + height/2)`.
+
+| Tool | Use |
+|---|---|
+| `mobile_click_on_screen_at_coordinates` | Tap buttons, select items |
+| `mobile_swipe_on_screen` | Scroll, navigate, dismiss |
+| `mobile_long_press_on_screen_at_coordinates` | Context menus, drag |
+| `mobile_type_keys` | Text input (tap field first to focus) |
+| `mobile_press_button` | System buttons — iOS: `home`, `lock`. Android: `home`, `back`, `recent`, `volume_up/down` |
+
+**Never hardcode coordinates** — always get fresh bounds when the screen changes.
+
+## Navigation Patterns
+
+**iOS:** Tab bars (bottom), back button (top-left) or swipe-from-left, modals dismissed via "Done"/"X"/swipe-down.
+
+**Android:** Bottom navigation, back via `mobile_press_button` with `back` (essential), dialogs dismissed via back button or tap outside. Snackbars/toasts are transient — screenshot immediately.
 
 ## Device Logs
-- Check platform log output for errors, warnings, crashes
-- Mobile equivalent of browser console monitoring
-- Look for unhandled exceptions, assertion failures, crash reports
-- Correlate log entries with the interaction that triggered them
 
-## Screenshot-Heavy Workflow
-Mobile MCPs provide less structured data than web DevTools. Compensate with frequent screenshots:
-- Before and after each interaction
-- When something looks wrong
-- To capture transient states (loading, animations, transitions)
+mobile-mcp doesn't expose logs directly. Use shell when UI evidence is insufficient:
 
-Screenshots are the primary evidence format for mobile investigations.
+- **iOS:** `xcrun simctl spawn booted log stream --predicate 'processImagePath contains "<AppName>"' --level debug`
+- **Android:** `adb logcat --pid=$(adb shell pidof <package.name>)` (clear buffer first with `adb logcat -c`)
+
+Capture logs **during reproduction** — start stream, then trigger the issue.
+
+## Evidence Capture
+
+Choose mode before starting:
+
+- **Screenshot mode** — single-screen checks, 1–2 images. Take before/after the key action.
+- **Video mode** — flows, multi-step validations, or anything needing >2 screenshots:
+  1. `mobile_start_screen_recording`
+  2. Execute flow in fast mode (no screenshots during recording)
+  3. `mobile_stop_screen_recording`
+  4. Screenshot at the assertion point
+
+Android recordings max at 180 seconds — split longer flows.
 
 ## Known Limitations
-- **No direct network inspection** — most mobile MCPs cannot intercept network traffic. If network behavior is relevant to the investigation, note this limitation and suggest the operator use a proxy tool (e.g., Charles Proxy, mitmproxy) for network capture.
-- **No runtime JavaScript/native debugging** — mobile MCPs observe the UI layer, not the runtime. Source code cross-referencing is the primary tool for understanding "why."
 
-## Mobile-Specific Anti-Pattern
-
-| Doing this... | Means you're off track |
-|---|---|
-| Tapping at hardcoded coordinates without checking the accessibility tree | Elements move — always get fresh bounds |
+- **No network inspection** — suggest proxy tools (Charles, mitmproxy, Proxyman) if needed.
+- **No runtime debugging** — use source code cross-referencing to explain "why."
+- **No file system access** — suggest `xcrun simctl get_app_container` (iOS) or `adb shell run-as` (Android) if local storage is relevant.
