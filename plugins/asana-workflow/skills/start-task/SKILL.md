@@ -164,9 +164,11 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
-### Step 10a: Resolve QA Skill (Bug category only)
+### Step 10a: Resolve QA Skill
 
-Determine which QA skill to invoke. Check in order:
+Determine which QA skill to invoke. This applies to **all task categories** — bugs use it for the investigate/verify loop, non-bugs use it for completion verification (Step 10e).
+
+Check in order:
 
 1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa` or `qa-skill: mobile-qa`). If found, use it.
 2. **Project signals** — infer from project files:
@@ -175,11 +177,11 @@ Determine which QA skill to invoke. Check in order:
    - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
    - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
 3. **Ambiguous or no signal** — ask the operator (blocking):
-   > "Which QA skill should I use for this bug?
+   > "Which QA skill should I use?
    > 1. `web-qa` (browser-based, Chrome DevTools MCP)
    > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)"
 
-Use the resolved QA skill for both investigate (Step 10b) and verify (Step 10d) invocations.
+Use the resolved QA skill for all QA invocations in this task.
 
 ### Step 10b: Verify Bug
 
@@ -200,13 +202,32 @@ After the fix is committed, re-invoke the resolved QA skill in **verify** mode w
 - **Fail** (behavior still matches original actual) → tell the operator the fix didn't resolve the issue. Return to Step 10c for another debugging pass.
 
 **Handoff instruction:** When passing context to the downstream skill, include this explicitly:
-> "When this workflow is complete, return to `start-task` Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
+> "When this workflow is complete, return to `start-task` Step 10e (for non-bug tasks) or Step 11 and invoke `ship-it`. Do not end the session — there is one more step."
 
 This ensures the downstream skill knows control must return here rather than closing out.
 
+### Step 10e: QA Verification (Non-Bug Tasks)
+
+**Applies to non-bug tasks only** (Feature Request, Tech Debt, etc.). Bug tasks already have QA via Steps 10b/10d.
+
+After the development workflow (feature-dev or brainstorm) signals completion, ask the operator before proceeding to ship-it:
+
+> "Development is complete. Would you like me to run QA to verify the changes before shipping?
+> This will build, deploy, and visually verify the affected flows. Evidence will be uploaded to the Asana task.
+> - **Yes** — run QA verification
+> - **Skip** — proceed to ship-it without QA"
+
+If the operator chooses **Yes**:
+1. Resolve the QA skill (Step 10a, if not already resolved).
+2. Invoke the QA skill in **investigate** mode with a description of what was built/changed.
+3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
+4. Proceed to Step 11.
+
+If the operator chooses **Skip**, proceed directly to Step 11.
+
 ### Step 11: Ship It
 
-**This step runs as soon as the development workflow signals completion** — `feature-dev` at Phase 7 (Summary), or `systematic-debugging` after confirming the fix is verified. Do not wait for the user to ask.
+**This step runs after QA verification (Step 10d for bugs, Step 10e for non-bugs) or when the operator skips QA.** Do not wait for the user to ask.
 
 Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
 

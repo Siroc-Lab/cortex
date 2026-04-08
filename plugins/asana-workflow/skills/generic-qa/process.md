@@ -147,6 +147,16 @@ Include:
 2. **Result** — behavior still matches original actual
 3. **Evidence** — reference to attached screenshot/video
 
+#### Feature Completion
+
+When QA is invoked for a **non-bug task** (feature, tech debt, etc.) via `start-task` Step 10e, post:
+
+Prefix: `✅ QA Verification — Feature Complete`
+
+Include:
+1. **What was verified** — the flow or behavior checked
+2. **Evidence** — reference to attached screenshot/video
+
 #### Evidence Upload
 
 After posting the comment, upload all evidence files from the evidence directory to the task using the `asana-api` Upload Attachment operation. This creates a permanent visual record on the ticket.
