@@ -28,6 +28,18 @@ Two invocation modes, selected by `$ARGUMENTS`:
 - **SUT** — A running application, identified by the platform extension's discovery process. See the extension's `references/discovery.md`. **Blocking** — cannot proceed without it.
 - **Source code** (optional) — enhances findings with file/line context but is not required.
 
+## Evidence Directory
+
+When a task GID is in context, create a directory to persist evidence files:
+
+```
+/tmp/qa-evidence/<task-gid>/
+```
+
+If no task GID (standalone invocation), use `/tmp/qa-evidence/<timestamp>/`.
+
+All assertion-point screenshots and recordings go here with descriptive names (e.g., `bug-reproduced.png`, `fix-verified.png`, `flow-recording.mp4`). Platform extensions should use their save-to-file tools (not inline-only capture) for evidence that needs to be uploaded.
+
 ## The Flow
 
 ### Step 1: Discover the SUT
@@ -89,11 +101,13 @@ See `references/reporting.md` (in this directory) for the full report structure.
 
 ### Step 6: Post QA Finding to Asana
 
-Only posts in **investigate** mode when invoked from `start-task` (a task GID is available in context). Verify mode does not post — ship-it's `🤖 Done` already signals the fix landed, and failures loop back to fix-bug with no ticket update needed.
+Posts when a task GID is available in context (invoked from `start-task`). If no task GID (standalone invocation), skip this step — the report is the artifact.
 
-Post a comment via the `asana-api` skill based on the investigation outcome:
+Post a comment and upload evidence via the `asana-api` skill based on the mode and outcome:
 
-#### Bug Confirmed
+#### Investigate Mode
+
+##### Bug Confirmed
 
 Prefix: `🔍 Bug Confirmed`
 
@@ -103,7 +117,7 @@ Include:
 3. **Evidence summary** — what was captured (screenshots, log output, traces)
 4. **Recommendation** — suggested fix or next steps
 
-#### Cannot Reproduce
+##### Cannot Reproduce
 
 Prefix: `❓ Cannot Reproduce`
 
@@ -113,9 +127,43 @@ Include:
 3. **Environment** — SUT identifier, testing tool, any relevant config
 4. **Questions** — specific clarifications needed to retry
 
-Format both as structured HTML (Asana rich text). This creates a permanent record on the ticket of what QA found before any fix work begins.
+#### Verify Mode
 
-If no task GID is in context (standalone invocation), skip this step — the report is the artifact and the operator decides what to do with it.
+##### Pass
+
+Post comment with prefix: `✅ QA Verification — PASSED`
+
+Include:
+1. **What was verified** — the reproduction steps that were replayed
+2. **Result** — behavior now matches expected
+3. **Evidence** — reference to attached screenshot/video
+
+##### Fail
+
+Post comment with prefix: `❌ QA Verification — FAILED`
+
+Include:
+1. **What was verified** — the reproduction steps replayed
+2. **Result** — behavior still matches original actual
+3. **Evidence** — reference to attached screenshot/video
+
+#### Feature Completion
+
+When QA is invoked for a **non-bug task** (feature, tech debt, etc.) to verify UI behavior, post:
+
+Prefix: `✅ QA Verification — Feature Complete`
+
+Include:
+1. **What was verified** — the flow or behavior checked
+2. **Evidence** — reference to attached screenshot/video
+
+#### Evidence Upload
+
+After posting the comment, upload all evidence files from the evidence directory to the task using the `asana-api` Upload Attachment operation. This creates a permanent visual record on the ticket.
+
+Upload the assertion-point screenshot at minimum. If a recording exists, upload that too.
+
+Format all comments as structured HTML (Asana rich text).
 
 ## Behavior Rules
 

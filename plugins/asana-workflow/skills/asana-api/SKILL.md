@@ -166,6 +166,19 @@ curl -s -H "Authorization: Bearer $ASANA_TOKEN" \
 
 Filter results for `type: "comment"` to get human-written comments.
 
+### Upload Attachment
+
+Upload a file (screenshot, video, etc.) to a task:
+
+```bash
+curl -s -X POST -H "Authorization: Bearer $ASANA_TOKEN" \
+  -F "parent=<task-gid>" \
+  -F "file=@/path/to/file.png" \
+  "https://app.asana.com/api/1.0/attachments"
+```
+
+Supported file types include images (`.png`, `.jpg`), videos (`.mp4`), and documents. The `parent` field is the task GID. The response includes the attachment GID and download URL.
+
 ## URL Formats and GID Extraction
 
 Asana URLs come in several formats. The task GID is always a numeric segment:

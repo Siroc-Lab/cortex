@@ -9,6 +9,7 @@
 - **Coordinates from bounds** — all gestures are coordinate-based. See `investigation.md` → Gestures for coordinate calculation and rules.
 - **Android back button** — `mobile_press_button` with `back` is essential for navigation, dismissing dialogs, and closing keyboards. iOS has no equivalent (use UI buttons or swipe gestures).
 - **Transient UI** — snackbars, toasts, and alerts disappear quickly. Screenshot immediately when they appear.
+- **Evidence persistence** — at assertion points, use `mobile_save_screenshot` (not `mobile_take_screenshot`) to save to the evidence directory. For recordings, pass an explicit `output` path in the evidence directory. See `../../generic-qa/process.md` → Evidence Directory.
 
 ## Verification
 

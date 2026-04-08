@@ -52,11 +52,23 @@ with these explicit requirements:
 - If the gate still cannot be satisfied after a second pass, halt and surface the blocker
   to the user with a summary of what was attempted
 
-## Step 3: Ship
+## Step 3: Verify Fix (BLOCKING)
+
+**This step cannot be skipped under any circumstance.**
+
+After TDD passes, return to `start-task` Step 10d — invoke the resolved QA skill in **verify** mode with the original reproduction steps. The QA skill will rebuild, deploy, and replay the reproduction steps.
+
+- **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 4.
+- **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana. Return to Step 1 for another debugging pass. Do NOT proceed to Step 4.
+
+**Do not hand off to ship-it until verify passes.** A code fix that passes tests but fails runtime verification is not complete.
+
+## Step 4: Ship
 
 Invoke `ship-it` with the following context:
 - Summary of root cause and fix (from systematic-debugging)
 - Regression test name and file path
 - Test run output confirming all green
+- QA verification status (passed)
 
 `ship-it` handles PR creation and Asana task update.
