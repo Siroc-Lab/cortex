@@ -24,16 +24,7 @@ Invoke `git-check`. If it returns blocking issues, stop and resolve them before 
 
 ## Step 2: Run Project Commands
 
-Read the project's `CLAUDE.md` for declared test, build, and lint commands:
-
-```markdown
-## Ship Checks
-test: yarn test
-build: yarn build
-lint: yarn lint
-```
-
-If `## Ship Checks` is missing or any commands are not declared, **do not block** — instead scan CI pipelines to infer them (see below), then confirm with the user before running.
+Scan CI pipelines to infer test, build, and lint commands (see below), then confirm with the user before running.
 
 ### CI Pipeline Inference
 
