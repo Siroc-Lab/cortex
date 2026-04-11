@@ -1,67 +1,63 @@
-# Testing Tool: Mobile Testing MCP
+# Testing Tool: mobile-mcp
 
-## Capability Contract
+[mobile-mcp](https://github.com/mobile-next/mobile-mcp) — unified API for iOS simulators and Android emulators. Tool names and parameters are self-documented via the MCP schema; this file covers only what the schema doesn't tell you.
 
-A mobile testing MCP must provide these capabilities for the QA skill to function. Tool names vary by MCP server — examples shown are from common servers.
+## Usage Tips
 
-### Required Capabilities
-
-| Capability | Purpose | Example Tool |
-|---|---|---|
-| Screenshot | Capture visual evidence | `mobile_take_screenshot` |
-| List UI elements | Inspect the accessibility tree | `mobile_list_elements_on_screen` |
-| Tap | Interact with elements | `mobile_click_on_screen_at_coordinates` |
-| Swipe | Scroll and navigate | `mobile_swipe_on_screen` |
-| Type text | Fill inputs | `mobile_type_keys` |
-| Launch app | Start or restart the SUT | `mobile_launch_app` |
-| Terminate app | Reset app state | `mobile_terminate_app` |
-
-### Optional Capabilities
-
-| Capability | Purpose | Example Tool |
-|---|---|---|
-| List devices | Discover available simulators/emulators/devices | `mobile_list_available_devices` |
-| Screen recording | Capture motion/transitions | `mobile_start_recording` |
-| Long press | Context menus, drag initiation | `mobile_long_press_on_screen_at_coordinates` |
-| Double tap | Zoom, selection | `mobile_double_tap_on_screen` |
-| Set orientation | Test landscape/portrait | `mobile_set_orientation` |
+- **Fetch tool schema first** — Always use `ToolSearch` to load a mobile-mcp tool's schema before calling it for the first time. The schema is small (a few lines) and cheaper than a failed call + retry cycle. Never guess parameter names.
+- **Tap before typing** — `mobile_type_keys` requires the input field to be focused first. Tap the field, then type.
+- **Coordinates from bounds** — all gestures are coordinate-based. See `investigation.md` → Gestures for coordinate calculation and rules.
+- **Android back button** — `mobile_press_button` with `back` is essential for navigation, dismissing dialogs, and closing keyboards. iOS has no equivalent (use UI buttons or swipe gestures).
+- **Transient UI** — snackbars, toasts, and alerts disappear quickly. Screenshot immediately when they appear.
 
 ## Verification
 
-Attempt to call the screenshot or list-devices tool. If it returns a result, the MCP is working. If it fails, the testing tool is not connected.
+1. `mobile_list_available_devices` — must return a device list.
+2. `mobile_take_screenshot` — must return a screen image.
 
-**Expected success:** A screenshot image or a list of connected devices/simulators.
+**Blocking** — cannot proceed without both succeeding.
 
-**Failure means:**
-- No mobile testing MCP is configured
-- No simulator/emulator/device is running
-- The MCP server is not started
+### Prerequisites (check only for the target platform)
+
+- **iOS:** `xcode-select -p` and `xcrun simctl list devices available`
+- **Android:** `adb version`
+- **Node.js:** v22+ (`node --version`)
+
+## MCP Disconnection Recovery
+
+If any mobile-mcp tool fails:
+
+1. Tell the operator.
+2. Restart: `npx -y @mobilenext/mobile-mcp@latest &`
+3. If still broken, ask operator to run `/mcp` and restart mobile-mcp.
+4. Re-verify with `mobile_list_available_devices`.
+5. Resume from where you left off.
+
+**On `/resume`:** Always re-verify before continuing.
 
 ## Setup Guide
 
-If verification fails, tell the operator:
+If verification fails:
 
-> A mobile testing MCP is required but not connected. You'll need:
+> mobile-mcp is required but not connected.
 >
-> 1. A mobile testing MCP server installed and configured in Claude Code
-> 2. A running simulator, emulator, or physical device
-> 3. The target app installed on the device
+> **Install:** `npx -y @mobilenext/mobile-mcp@latest`
 >
-> Some options (not prescriptive — choose what fits your setup):
-> - [mobile-mcp](https://github.com/mobile-next/mobile-mcp) — cross-platform, most popular
-> - [Appium MCP](https://github.com/appium/appium-mcp) — richest tool set, hybrid app support
-> - [iOS Simulator MCP](https://github.com/joshuayoes/ios-simulator-mcp) — lightweight, simulator-only
-> - [XcodeBuildMCP](https://github.com/getsentry/XcodeBuildMCP) — build+test+debug combo
->
-> Once configured, I can verify the connection and proceed.
+> **Add to MCP settings:**
+> ```json
+> {"mcpServers":{"mobile-mcp":{"command":"npx","args":["-y","@mobilenext/mobile-mcp@latest"]}}}
+> ```
 
-Do NOT proceed with investigation if the testing tool is not working. This is a **blocking** requirement.
+## App State Reset
 
-## Taking Screenshots
+Reset to clean state before investigation unless operator asks to preserve state.
 
-Use the MCP's screenshot capability to capture evidence at key moments:
-- Before reproducing the issue (baseline state)
-- During reproduction (the problematic state)
-- After any state changes relevant to the investigation
+- **Android:** `adb shell pm clear <package_name>` then `mobile_launch_app`
+- **iOS:** No `pm clear` equivalent — uninstall and reinstall:
+  ```bash
+  xcrun simctl get_app_container booted <bundle_id>  # find .app path
+  xcrun simctl uninstall booted <bundle_id>
+  xcrun simctl install booted /path/to/App.app
+  ```
 
-Always include screenshots in the report — they are primary evidence. Mobile investigations are especially screenshot-heavy since accessibility tree data alone often lacks the visual context needed to understand issues.
+**Skip reset when:** operator says to keep state, verify mode, or state-dependent investigation.

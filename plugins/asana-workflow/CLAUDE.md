@@ -15,7 +15,7 @@ asana-workflow/
     ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
     ├── generic-qa/        ← Shared QA process & references (not a skill — used by web-qa, mobile-qa)
     ├── web-qa/            ← Web QA investigation & verification (bundled)
-    ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, placeholder)
+    ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, mobile-mcp)
     ├── ship-it/           ← Shipping orchestrator (bundled)
     ├── start-task/        ← Entry point for dev workflow (bundled)
     └── work-summary/      ← Session summary (bundled)
@@ -51,8 +51,8 @@ generic-qa (shared markdown, not a skill)
 web-qa (extends generic-qa)
   └── references/        (Chrome DevTools MCP tooling, URL discovery, DOM/console/network)
 
-mobile-qa (extends generic-qa, placeholder)
-  └── references/        (mobile MCP capability contract, app discovery, accessibility tree/gestures)
+mobile-qa (extends generic-qa, mobile-mcp)
+  └── references/        (mobile-mcp tooling, app+device discovery, accessibility tree/gestures/logs)
 
 ## External Dependencies
 
