@@ -10,8 +10,10 @@ description: >
   Also handles pausing blocked work ("park this", "I'm blocked", "pause task", "put this on hold")
   and resuming ("resume task", "pick up where I left off", "continue [task-id]"). Use this variant
   for straightforward tasks; use start-task-steps for long or complex tasks that need step-by-step
-  checkpoint tracking.
-argument-hint: <asana-task-url> [brainstorm|feature-dev]
+  checkpoint tracking. For a shortcut that runs the full Asana orchestration and ship-it but skips
+  sub-skill routing (feature-dev, brainstorming, fix-bug) and implements inline instead, add "fast"
+  to the arguments — "start task fast", "fast mode", "just start coding".
+argument-hint: <asana-task-url> [brainstorm|feature-dev|fast]
 ---
 
 # Start Task
@@ -23,7 +25,17 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
 - Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa` or `mobile-qa` (resolved at Step 10a), and optionally `superpowers:brainstorming` skills
 
+## Fast Mode
+
+**Trigger:** `$ARGUMENTS` contains `fast`.
+
+Fast mode runs the full lifecycle (Steps 0–9 and Step 11) unchanged but replaces Step 10 skill routing with direct inline implementation. No `feature-dev`, `brainstorming`, `fix-bug`, or QA skill is invoked — implement the solution immediately using built-in tools (Read, Edit, Bash, Grep, etc.) and reason about it directly in this conversation.
+
+**What is skipped:** only the sub-skill routing in Step 10 (and the Bug sub-steps 10a–10d). Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
+
 ## The Flow
+
+**Before Step 0:** Check if `$ARGUMENTS` contains `fast`. If so, note it — Steps 0–9 and Step 11 run as normal, but Step 10 will skip skill routing and implement inline instead.
 
 ### Step 0: Check External Skill Dependencies
 
@@ -134,6 +146,10 @@ These happen automatically — no permission needed.
 ### Step 10: Route to the Right Workflow
 
 Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
+
+**If `$ARGUMENTS` contains `fast`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip Steps 10a–10d entirely and proceed to Step 11 when done.
+
+**Otherwise:**
 
 - **"Bug"** — Follow the verify → fix → verify loop (Steps 10a–10c below).
 - **Anything else** (Feature Request, Tech Debt, etc.):
