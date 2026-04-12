@@ -51,15 +51,42 @@ The typical development lifecycle looks like this:
 
 ## Available Skills
 
+### Workflow entry points
+
 | Skill | Trigger | Description |
 |-------|---------|-------------|
-| `/start-task` | Paste an Asana URL | Validates task, creates branch, draft PR, routes to feature-dev or debugging |
-| `/ship-it` | "ship it", "we're done" | Orchestrates pre-checks, summary, PR creation, and Asana update |
-| `/pre-ship-check` | "am I ready to ship" | Validates git state, lint, build, and tests |
-| `/git-check` | "check git status" | Branch safety, working tree, debug artifacts |
-| `/work-summary` | "summarize my work" | Session recap for standups, handoffs, PRs |
-| `/create-pr` | "create a PR" | Full PR lifecycle with Asana linking |
-| `/asana-api` | Any Asana operation | Asana REST API patterns and operations |
+| `/start-task` | Paste an Asana URL, "start task", "work on this" | Validates task, creates branch and draft PR, routes to feature-dev or fix-bug. Options: `fast` (implement inline, skip sub-skill routing), `brainstorm` (brainstorm design first), `feature-dev` (go straight to implementation). Supports pause ("park this", "I'm blocked") and resume. |
+| `/start-task-steps` | Same triggers as start-task | Checkpoint-tracked variant for long or complex tasks — writes a checkpoint after every step so work can be safely interrupted and resumed. |
+| `/log-task` | "log this as a task", "create a ticket", "capture this in Asana" | Creates an Asana task from work discovered or completed mid-conversation. Arguments: `sprint: <url>`, `backlog: <url>` to override board defaults. |
+
+### Shipping
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `/ship-it` | "ship it", "we're done", "ready to ship" | Orchestrates pre-ship checks, work summary, PR creation/promotion, and Asana task close. |
+| `/create-pr` | "create a PR", "open a pull request" | Full PR lifecycle with Asana linking and reviewer assignment. |
+
+### Validation & checks
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `/pre-ship-check` | "am I ready to ship", "pre-flight check" | Validates git state, lint, build, and tests before shipping. |
+| `/git-check` | "check git status", "is my branch clean" | Branch safety, working tree cleanliness, debug artifact detection. |
+
+### QA
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `/web-qa` | "QA this", "why is X broken", `/web-qa <url>` | Investigates and verifies bugs in running web applications via Chrome DevTools MCP. |
+| `/mobile-qa` | "/mobile-qa", "QA this app" | Investigates and verifies bugs in iOS simulators and Android emulators via mobile-mcp. |
+
+### Utilities
+
+| Skill | Trigger | Description |
+|-------|---------|-------------|
+| `/work-summary` | "summarize my work", "standup notes", "session recap" | Generates a concise recap of what was done, for standups, handoffs, or PRs. |
+| `/fix-bug` | Invoked automatically by start-task for Bug tickets | Full bug-fix lifecycle: root cause investigation, TDD hard gate, and ship. |
+| `/asana-api` | Any Asana operation | Asana REST API patterns and common operations. |
 
 ## Updating
 
