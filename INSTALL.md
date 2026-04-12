@@ -39,6 +39,16 @@ Once all prerequisites pass, the script fetches the marketplace manifest and pri
 
 **Note:** If the script added tokens to your shell profile, reload your terminal (`source ~/.zshrc` or open a new window) before continuing.
 
+## How It Works
+
+The typical development lifecycle looks like this:
+
+```
+/start-task <asana-url>   →   develop (feature-dev / fix-bug)   →   /ship-it
+```
+
+`start-task` is the main entry point — it validates the task, sets up the branch and draft PR, and routes to the right workflow automatically. When development is done, it hands off to `ship-it`, which runs checks, creates the PR, and closes the Asana ticket. All other skills can also be used standalone.
+
 ## Available Skills
 
 | Skill | Trigger | Description |
