@@ -38,6 +38,15 @@ Keep SKILL.md under ~100 lines. For larger reference content, create a `referenc
    ```
 2. Start a new Claude Code session or run `/plugin reload asana-workflow` to test
 
+## Before opening a PR
+
+Skill changes must include evidence that the change improves behavior. PRs without evaluation should not be merged.
+
+Accepted forms of evidence:
+- Before/after examples showing improved outputs
+- Specific cases where the old behavior failed and the new one handles them correctly
+- Metrics or observations from real usage
+
 ## Git workflow
 
 - Never commit directly to `main`
