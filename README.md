@@ -76,6 +76,10 @@ The workflow updates `plugin.json` and the matching entry in `marketplace.json`,
 - `minor` — new skills or backwards-compatible changes (`1.0.0` → `1.1.0`)
 - `major` — breaking changes, removed skills, renamed inputs (`1.0.0` → `2.0.0`)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and the development workflow.
+
 ## License
 
 Proprietary - SIROC Team
