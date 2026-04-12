@@ -8,7 +8,7 @@ Central repository for SIROC's AI context: skills, agents, hooks, and orchestrat
 
 ## Plugins
 
-### asana-workflow (v1.0.0)
+### asana-workflow (v1.1.1)
 
 End-to-end Asana-driven development workflow: from ticket to shipped PR with automated task tracking, git management, and team communication.
 
