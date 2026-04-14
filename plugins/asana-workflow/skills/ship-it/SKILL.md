@@ -63,12 +63,14 @@ Invoke `pre-ship-check`.
 
 ### Step 2: QA Verification (if needed)
 
-If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), offer to run QA before continuing:
+If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), **always ask the operator** — never skip autonomously, even in auto mode or when the change seems trivial:
 
 > "No QA verification found. Would you like to run QA to verify the changes before shipping?
 > This will build, deploy, and visually verify the affected flows. Evidence will be uploaded to the Asana task.
 > - **Yes** — run QA verification
 > - **Skip** — proceed without QA"
+
+Wait for the operator's answer before continuing.
 
 If the operator chooses **Yes**:
 1. Resolve the QA skill: check CLAUDE.md for `qa-skill:` declaration, then infer from project files (same logic as start-task Step 10a).

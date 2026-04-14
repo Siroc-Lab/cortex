@@ -209,11 +209,15 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 
 **Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
 
-After the development workflow signals completion, ask the operator:
+**HARD GATE — always ask the operator. Never decide autonomously**, even in auto mode or when the change seems trivial. The only exceptions are if the operator has explicitly said "YOLO", "don't ask me", or "you decide" earlier in this session.
+
+After the development workflow signals completion, ask:
 
 > "Implementation is complete. The changes can be visually verified before shipping — I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.
 >
 > Run QA verification? [yes / skip]"
+
+Wait for the operator's answer before continuing.
 
 If **yes** — resolve the QA skill (Step 10a, if not already resolved) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
