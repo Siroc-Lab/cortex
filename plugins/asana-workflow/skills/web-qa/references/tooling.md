@@ -43,22 +43,24 @@ echo "<base64_data>" | base64 -d > "$EVIDENCE_DIR/01-initial-state.png"
 
 Use descriptive, ordered names (`01-`, `02-`, etc.). Always include screenshots in the report — they are primary evidence.
 
-## Screen Recording with experimentalScreencast
+## Screen Recording
 
-Use `experimentalScreencast` for issues involving:
+Use `screencast_start` / `screencast_stop` for issues involving:
 - Transitions or animations
 - Multi-step flows where timing matters
 - Flicker, flash, or transient visual bugs
 - Race conditions visible in the UI
 
-**Start recording:**
+**Requires:** `ffmpeg` installed and in PATH. If missing, fall back to screenshots only.
+
+**Start recording** (saves to `$EVIDENCE_DIR`):
 ```
-Page.startScreencast with format: "png", quality: 80, everyNthFrame: 2
+screencast_start output: "$EVIDENCE_DIR/recording.mp4"
 ```
 
 **Stop recording:**
 ```
-Page.stopScreencast
+screencast_stop
 ```
 
-Save the key assertion-point frame to `$EVIDENCE_DIR` (same base64 decode approach as screenshots). Include the frame in the report when visual motion is relevant to the finding.
+The tool produces an MP4 file directly. Include it in the evidence upload alongside the assertion-point screenshot.
