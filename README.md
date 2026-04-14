@@ -8,7 +8,7 @@ Central repository for SIROC's AI context: skills, agents, hooks, and orchestrat
 
 ## Plugins
 
-### asana-workflow (v1.0.0)
+### asana-workflow (v1.1.1)
 
 End-to-end Asana-driven development workflow: from ticket to shipped PR with automated task tracking, git management, and team communication.
 
@@ -31,54 +31,43 @@ End-to-end Asana-driven development workflow: from ticket to shipped PR with aut
 
 ## Installation
 
-See [INSTALL.md](INSTALL.md) for setup instructions.
+Run the setup script — it validates prerequisites, configures tokens, and guides you through plugin installation:
 
-## Repository Structure
-
-```
-.claude-plugin/
-  marketplace.json        # Marketplace catalog
-plugins/
-  asana-workflow/
-    .claude-plugin/
-      plugin.json         # Plugin manifest
-    .mcp.json             # MCP server config (wires up mobile-mcp)
-    skills/
-      start-task/         # Entry point skill + references
-      start-task-steps/   # Checkpoint-tracked lifecycle variant
-      ship-it/            # Shipping orchestrator
-      pre-ship-check/     # Readiness gate
-      git-check/          # Git state validation
-      work-summary/       # Session recap
-      create-pr/          # PR lifecycle
-      asana-api/          # Asana API operations + spec reference
-      fix-bug/            # Bug-fix lifecycle orchestrator
-      generic-qa/         # Shared QA process and references (used by web-qa, mobile-qa)
-      web-qa/             # Web QA via Chrome DevTools MCP
-      mobile-qa/          # Mobile QA via mobile-mcp (iOS simulators + Android emulators)
+```bash
+bash setup.sh
 ```
 
-## Versioning
+### What the Script Does
 
-Plugin versions are bumped via the **Bump Plugin Version** GitHub Actions workflow.
+**GitHub CLI** — Checks that `gh` is installed, authenticated, and has access to the private `Siroc-Lab/cortex` repo.
 
-Go to **Actions → Bump Plugin Version → Run workflow** and fill in:
+**Git SSH** — Tests SSH authentication to GitHub. If you use SSH keys, it offers to configure the HTTPS-to-SSH rewrite Claude Code needs:
 
-| Input | Description |
-|-------|-------------|
-| `plugin` | Plugin folder name (e.g. `asana-workflow`) |
-| `level` | `patch` · `minor` · `major` |
+```bash
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+```
 
-The workflow updates `plugin.json` and the matching entry in `marketplace.json`, tags the commit `<plugin>@<version>`, and pushes directly to the branch it was triggered from.
+**Asana token** — Looks for `ASANA_PERSONAL_ACCESS_TOKEN` in your environment. If missing, prompts you to paste one (from https://app.asana.com/0/my-apps) and writes it to your profile.
 
-**Semver guide:**
-- `patch` — bug fixes, copy changes, non-breaking skill tweaks (`1.0.0` → `1.0.1`)
-- `minor` — new skills or backwards-compatible changes (`1.0.0` → `1.1.0`)
-- `major` — breaking changes, removed skills, renamed inputs (`1.0.0` → `2.0.0`)
+**GitHub token** — Checks for `GITHUB_TOKEN` or `GH_TOKEN` for marketplace auto-updates. Can extract one from `gh auth token` if not set.
+
+**Plugin installation** — Once all prerequisites pass, prints the exact Claude Code commands to run:
+
+1. `/plugin marketplace add Siroc-Lab/cortex`
+2. `/plugin install asana-workflow@siroc-cortex`
+
+> If the script added tokens to your shell profile, reload your terminal (`source ~/.zshrc`) before continuing.
+
+## Updating
+
+```
+/plugin marketplace update siroc-cortex
+/plugin update asana-workflow@siroc-cortex
+```
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions and the development workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
 
 ## License
 
