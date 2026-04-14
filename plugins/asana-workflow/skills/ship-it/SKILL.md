@@ -77,7 +77,7 @@ If the operator chooses **Yes**:
 
 If the operator chooses **Skip**, proceed to Step 3.
 
-**Skip this step when:** pre-ship-check did not report a QA advisory (QA already done, or no task GID).
+**Skip this step when:** pre-ship-check did not report a QA advisory (QA already done, or no task GID), **or** the operator already declined QA earlier in this session (e.g., answered "skip" at start-task Step 10e). Do not ask twice.
 
 ### Step 3: Work Summary
 
