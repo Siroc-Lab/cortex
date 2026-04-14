@@ -209,7 +209,7 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 
 **Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
 
-**HARD GATE — always ask the operator. Never decide autonomously**, even in auto mode or when the change seems trivial. Only skip asking if the operator has clearly expressed in this session that they want you to make this decision for them.
+**HARD GATE — always ask the operator. Never decide autonomously**, even in auto mode or when the change seems trivial. Only skip asking if the operator has clearly expressed in this session that they want you to make this decision for them, or has already stated their preference about QA for this task.
 
 After the development workflow signals completion, ask:
 
