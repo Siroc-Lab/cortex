@@ -2,7 +2,7 @@
 
 ## Verification
 
-Call `list_pages` to verify Chrome DevTools MCP is connected and functional. This must succeed before any investigation begins.
+Call `listPages` to verify Chrome DevTools MCP is connected and functional. This must succeed before any investigation begins.
 
 **Expected success:** Returns a list of open browser pages/tabs. At least one page should be accessible.
 
@@ -35,13 +35,13 @@ Use Chrome DevTools MCP screenshot capabilities to capture evidence at key momen
 - During reproduction (the problematic state)
 - After any state changes relevant to the investigation
 
-Chrome DevTools MCP returns screenshots as base64 PNG data. Save each to `$EVIDENCE_DIR`:
+Use `take_screenshot` with `filePath` to save directly to `$EVIDENCE_DIR`:
 
-```bash
-echo "<base64_data>" | base64 -d > "$EVIDENCE_DIR/01-initial-state.png"
+```
+take_screenshot filePath: "$EVIDENCE_DIR/01-initial-state.png"
 ```
 
-Use descriptive, ordered names (`01-`, `02-`, etc.). Always include screenshots in the report — they are primary evidence.
+For small captures (< 2MB) without a filePath it returns base64 — always use `filePath` for evidence that needs to be uploaded. Use descriptive, ordered names (`01-`, `02-`, etc.). Always include screenshots in the report — they are primary evidence.
 
 ## Screen Recording
 
@@ -55,7 +55,7 @@ Use `screencast_start` / `screencast_stop` for issues involving:
 
 **Start recording** (saves to `$EVIDENCE_DIR`):
 ```
-screencast_start output: "$EVIDENCE_DIR/recording.mp4"
+screencast_start path: "$EVIDENCE_DIR/recording.mp4"
 ```
 
 **Stop recording:**
