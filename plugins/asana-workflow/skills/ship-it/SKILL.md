@@ -63,7 +63,7 @@ Invoke `pre-ship-check`.
 
 ### Step 2: QA Verification (if needed)
 
-If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), **always ask the operator** — never skip autonomously, even in auto mode or when the change seems trivial:
+If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), **always ask the operator** — never skip autonomously, even in auto mode or when the change seems trivial. Only skip asking if the operator has clearly expressed in this session that they want you to make this decision for them:
 
 > "No QA verification found. Would you like to run QA to verify the changes before shipping?
 > This will build, deploy, and visually verify the affected flows. Evidence will be uploaded to the Asana task.
