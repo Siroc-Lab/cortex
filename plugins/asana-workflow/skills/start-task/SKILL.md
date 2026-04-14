@@ -209,7 +209,9 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 
 **Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
 
-**HARD GATE — always ask the operator. Never decide autonomously**, even in auto mode or when the change seems trivial. Only skip asking if the operator has clearly expressed in this session that they want you to make this decision for them, or has already stated their preference about QA for this task.
+**HARD GATE — always stop and wait for the operator's answer. Auto mode's "minimize interruptions" directive does NOT override this step.**
+
+Skip asking only if the operator has already provided an explicit answer about QA in this session — e.g., passed `skip QA` in the start-task arguments, or said "skip QA" / "run QA" earlier in the conversation. Inferred triviality (small change, simple fix, XS sizing) is NOT a valid reason to skip.
 
 After the development workflow signals completion, ask:
 
