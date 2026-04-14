@@ -9,13 +9,29 @@
 - **Coordinates from bounds** — all gestures are coordinate-based. See `investigation.md` → Gestures for coordinate calculation and rules.
 - **Android back button** — `mobile_press_button` with `back` is essential for navigation, dismissing dialogs, and closing keyboards. iOS has no equivalent (use UI buttons or swipe gestures).
 - **Transient UI** — snackbars, toasts, and alerts disappear quickly. Screenshot immediately when they appear.
+- **Evidence persistence** — at assertion points, use `mobile_save_screenshot` (not `mobile_take_screenshot`) to save to the evidence directory. For recordings, pass an explicit `output` path in the evidence directory. See `../../generic-qa/process.md` → Evidence Directory.
 
 ## Verification
 
 1. `mobile_list_available_devices` — must return a device list.
 2. `mobile_take_screenshot` — must return a screen image.
 
-**Blocking** — cannot proceed without both succeeding.
+**HARD GATE** — cannot proceed without both succeeding. If mobile-mcp is unavailable, immediately run the diagnostics below **before** doing anything else.
+
+### When mobile-mcp is unavailable
+
+Run this first:
+
+```bash
+which node 2>/dev/null && node --version
+```
+
+Then tell the operator what they need to do:
+
+- **No `node`:** Node.js v22+ is required — they need to install it, then restart Claude Code.
+- **`node` found but mobile-mcp still won't start:** Ask them to run `/mcp` to check server status, then `/plugin reload asana-workflow` or restart Claude Code.
+
+After explaining the fix, you may offer native shell commands (`xcrun simctl io`, `adb screenrecord`, etc.) as a **limited fallback** for the current session only — but always present installing Node.js/npx first.
 
 ### Prerequisites (check only for the target platform)
 
@@ -34,19 +50,6 @@ If any mobile-mcp tool fails:
 5. Resume from where you left off.
 
 **On `/resume`:** Always re-verify before continuing.
-
-## Setup Guide
-
-If verification fails:
-
-> mobile-mcp is required but not connected.
->
-> **Install:** `npx -y @mobilenext/mobile-mcp@latest`
->
-> **Add to MCP settings:**
-> ```json
-> {"mcpServers":{"mobile-mcp":{"command":"npx","args":["-y","@mobilenext/mobile-mcp@latest"]}}}
-> ```
 
 ## App State Reset
 

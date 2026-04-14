@@ -18,11 +18,32 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 - **Standalone** — The user asks "am I ready to ship?" and wants a full status report.
 - **Orchestrator step** — Called by `ship-it` as its first step. Blocking findings halt the pipeline.
 
-## Step 1: Git State Validation
+## Step 1: QA Verification Gate
+
+**Only applies when a task GID is in context. Skip when no task GID is available.**
+
+**1a. Check context first** — if a `✅ QA Verification` comment was posted in this session, the gate passes. Skip to Step 2.
+
+**1b. Fetch task stories** (via `asana-api`) and search for any comment containing `✅ QA Verification`. A `❌ QA Verification — FAILED` comment does **not** pass the gate.
+
+- **Found** → gate passes. Proceed to Step 2.
+- **Not found** → continue to 1c.
+
+**1c. Determine task category** — check conversation context for the task's Category field. If not in context, fetch the task details (via `asana-api` Fetch Task Details) to read the Category custom field.
+
+- **Bug** → **BLOCKING**. Report:
+  > QA verification has not passed for this bug task. The fix must be verified via the QA skill before shipping.
+  >
+  > This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
+
+- **Non-bug** (Feature Request, Tech Debt, etc.) → **ADVISORY**. Report:
+  > No QA verification found for this task. Visual verification with evidence upload is available.
+
+## Step 2: Git State Validation
 
 Invoke `git-check`. If it returns blocking issues, stop and resolve them before continuing. Advisory warnings are presented to the user to decide whether to proceed.
 
-## Step 2: Run Project Commands
+## Step 3: Resolve Project Commands
 
 Scan CI pipelines to infer test, build, and lint commands (see below), then confirm with the user before running.
 
@@ -46,7 +67,7 @@ Extract the most specific matching command for each of `test`, `build`, `lint`. 
 
 If no commands can be inferred for a given check after scanning all sources, mark that check as **SKIPPED (not configured)** — not blocking.
 
-## Step 3: Run Project Commands
+## Step 4: Run Project Commands
 
 Run in this order (cheapest first):
 

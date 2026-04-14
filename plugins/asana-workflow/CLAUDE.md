@@ -36,7 +36,7 @@ start-task
 fix-bug
   ├── [external] superpowers:systematic-debugging  (root cause investigation)
   ├── [external] superpowers:test-driven-development  (TDD hard gate)
-  └── ship-it                  (ship the fix)
+  └── → returns to start-task  (for QA verify + ship)
 
 ship-it
   ├── pre-ship-check     (readiness gate)
