@@ -160,6 +160,8 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
     > 1. Brainstorm the design first (`superpowers:brainstorming`)
     > 2. Go straight to implementation (`feature-dev:feature-dev`)"
     Wait for explicit answer before routing. No default assumed.
+  - **Handoff instruction:** When passing context to `feature-dev` or `brainstorming`, include:
+    > "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
 - **Category missing** — Prompt: "Is this a bug fix or a feature?" then apply the routing above.
 
 The branch is already created and checked out — the downstream skill works on it directly.
@@ -202,9 +204,6 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 
 - **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
-
-**Handoff instruction (non-bug tasks only):** When passing context to `feature-dev` or `brainstorming`, include:
-> "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
 
 ### Step 10e: QA Verification (Non-Bug Tasks)
 

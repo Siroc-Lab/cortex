@@ -72,7 +72,7 @@ If pre-ship-check reported a QA advisory (no QA verification found for a non-bug
 
 If the operator chooses **Yes**:
 1. Resolve the QA skill: check CLAUDE.md for `qa-skill:` declaration, then infer from project files (same logic as start-task Step 10a).
-2. Invoke the QA skill in **investigate** mode with a description of what was built/changed (from git diff/log).
+2. Invoke the QA skill with a summary of what was built/changed (from git diff/log) — same as start-task Step 10e.
 3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
 If the operator chooses **Skip**, proceed to Step 3.

@@ -22,11 +22,13 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 
 **Only applies when a task GID is in context.**
 
-Before any other checks, look for a QA verification comment on the Asana task (via `asana-api` Fetch Task Stories). Search for comments containing `✅ QA Verification`.
+Before any other checks, look for a QA verification comment on the Asana task (via `asana-api` Fetch Task Stories). Search for comments containing `✅ QA Verification — PASSED` (bugs) or `✅ QA Verification — Feature Complete` (non-bugs). A `❌ QA Verification — FAILED` comment does **not** pass the gate.
+
+Also check conversation context first — if a `✅ QA Verification` result was posted in this session, treat the gate as passed without re-fetching stories.
 
 ### Bug tasks
 
-- **Found** → QA gate passes. Proceed to Step 2.
+- **Found** (`✅ QA Verification — PASSED`) → QA gate passes. Proceed to Step 2.
 - **Not found** → **BLOCKING**. Report:
   > QA verification has not passed for this bug task. The fix must be verified via the QA skill before shipping.
 
@@ -34,7 +36,7 @@ This gate cannot be overridden. A bug fix without runtime verification evidence 
 
 ### Non-bug tasks (Feature Request, Tech Debt, etc.)
 
-- **Found** → QA gate passes. Proceed to Step 2.
+- **Found** (`✅ QA Verification — Feature Complete`) → QA gate passes. Proceed to Step 2.
 - **Not found** → **ADVISORY**. Report:
   > No QA verification found for this task. Visual verification with evidence upload is available.
 

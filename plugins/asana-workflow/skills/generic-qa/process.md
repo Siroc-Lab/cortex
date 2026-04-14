@@ -28,18 +28,6 @@ Two invocation modes, selected by `$ARGUMENTS`:
 - **SUT** — A running application, identified by the platform extension's discovery process. See the extension's `references/discovery.md`. **Blocking** — cannot proceed without it.
 - **Source code** (optional) — enhances findings with file/line context but is not required.
 
-## Evidence Directory
-
-When a task GID is in context, create a directory to persist evidence files:
-
-```bash
-mkdir -p /tmp/qa-evidence/<task-gid>/
-```
-
-If no task GID (standalone invocation), use `/tmp/qa-evidence/<timestamp>/` instead.
-
-All assertion-point screenshots and recordings go here with descriptive names (e.g., `bug-reproduced.png`, `fix-verified.png`, `flow-recording.mp4`). Platform extensions should use their save-to-file tools (not inline-only capture) for evidence that needs to be uploaded.
-
 ## The Flow
 
 ### Step 1: Discover the SUT
@@ -69,6 +57,18 @@ Ask the operator about any additional context for the problem.
 **HARD GATE:** Confirm with the operator before investigating — the SUT, the question, and any relevant context must be agreed on. If everything looks clear, confirm your understanding.
 
 ### Step 4: Investigate
+
+**Create the evidence directory** before capturing any screenshots or recordings:
+
+```bash
+# With task GID in context:
+mkdir -p /tmp/qa-evidence/<task-gid>/
+
+# Standalone (no task GID):
+mkdir -p /tmp/qa-evidence/$(date +%s)/
+```
+
+Save all assertion-point screenshots and recordings here with descriptive names (e.g., `bug-reproduced.png`, `fix-verified.png`, `flow-recording.mp4`). Platform extensions should use their save-to-file tools (not inline-only capture) for evidence that needs to be uploaded.
 
 **Investigate mode (default):**
 
@@ -149,7 +149,7 @@ Include:
 
 #### Feature Completion
 
-When QA is invoked for a **non-bug task** (feature, tech debt, etc.) via `start-task` Step 10e, post:
+When QA is invoked for a **non-bug task** (feature, tech debt, etc.) — via `start-task` Step 10e or `ship-it` Step 2 — post:
 
 Prefix: `✅ QA Verification — Feature Complete`
 
