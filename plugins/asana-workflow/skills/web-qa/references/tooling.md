@@ -13,16 +13,20 @@ Call `listPages` to verify Chrome DevTools MCP is connected and functional. This
 
 ## Setup Guide
 
-If verification fails, tell the operator:
+**HARD GATE** — do not proceed with investigation if the testing tool is not working. If Chrome DevTools MCP is unavailable, immediately run the diagnostics below **before** doing anything else.
 
-> Chrome DevTools MCP is required but not connected. To set it up:
->
-> 1. Start Chrome with remote debugging (isolated instance): `open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-qa`
-> 2. Reload the plugin (`/plugin reload asana-workflow`) to ensure the MCP server started
->
-> Once configured, I can verify the connection and proceed.
+### When Chrome DevTools MCP is unavailable
 
-Do NOT proceed with investigation if the testing tool is not working. This is a **blocking** requirement.
+Run this first:
+
+```bash
+which node 2>/dev/null && node --version
+```
+
+- **No `node`:** Node.js v22+ is required — tell the operator they need to install it, then restart Claude Code.
+- **`node` found:** Chrome DevTools MCP runs via npx, so Node is fine. Check Chrome instead:
+  1. Is Chrome running with remote debugging? If not, tell the operator: `open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-qa`
+  2. Reload the plugin: `/plugin reload asana-workflow`
 
 ## Safety Rule: Never Kill Chrome
 
