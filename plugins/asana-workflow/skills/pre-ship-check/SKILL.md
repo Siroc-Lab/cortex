@@ -20,27 +20,24 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 
 ## Step 1: QA Verification Gate
 
-**Only applies when a task GID is in context.**
+**Only applies when a task GID is in context. Skip when no task GID is available.**
 
-Before any other checks, look for a QA verification comment on the Asana task (via `asana-api` Fetch Task Stories). Search for comments containing `✅ QA Verification — PASSED` (bugs) or `✅ QA Verification — Feature Complete` (non-bugs). A `❌ QA Verification — FAILED` comment does **not** pass the gate.
+**1a. Check context first** — if a `✅ QA Verification` comment was posted in this session, the gate passes. Skip to Step 2.
 
-Also check conversation context first — if a `✅ QA Verification` result was posted in this session, treat the gate as passed without re-fetching stories.
+**1b. Fetch task stories** (via `asana-api`) and search for any comment containing `✅ QA Verification`. A `❌ QA Verification — FAILED` comment does **not** pass the gate.
 
-### Bug tasks
+- **Found** → gate passes. Proceed to Step 2.
+- **Not found** → continue to 1c.
 
-- **Found** (`✅ QA Verification — PASSED`) → QA gate passes. Proceed to Step 2.
-- **Not found** → **BLOCKING**. Report:
+**1c. Determine task category** — check conversation context for the task's Category field. If not in context, fetch the task details (via `asana-api` Fetch Task Details) to read the Category custom field.
+
+- **Bug** → **BLOCKING**. Report:
   > QA verification has not passed for this bug task. The fix must be verified via the QA skill before shipping.
+  >
+  > This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
 
-This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
-
-### Non-bug tasks (Feature Request, Tech Debt, etc.)
-
-- **Found** (`✅ QA Verification — Feature Complete`) → QA gate passes. Proceed to Step 2.
-- **Not found** → **ADVISORY**. Report:
+- **Non-bug** (Feature Request, Tech Debt, etc.) → **ADVISORY**. Report:
   > No QA verification found for this task. Visual verification with evidence upload is available.
-
-**Skip when:** no task GID is in context.
 
 ## Step 2: Git State Validation
 
