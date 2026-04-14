@@ -16,13 +16,28 @@
 1. `mobile_list_available_devices` — must return a device list.
 2. `mobile_take_screenshot` — must return a screen image.
 
-**Blocking** — cannot proceed without both succeeding. Do NOT attempt to work around this using native shell tools (`xcrun simctl`, `adb`, etc.) — mobile-mcp is a hard dependency, not optional. If it is unavailable, stop and follow the recovery steps below.
+**HARD GATE** — cannot proceed without both succeeding. If mobile-mcp is unavailable, immediately run the diagnostics below **before** doing anything else.
+
+### When mobile-mcp is unavailable
+
+Run this first:
+
+```bash
+which node 2>/dev/null && node --version
+```
+
+Then tell the operator what they need to do:
+
+- **No `node`:** Node.js v22+ is required — they need to install it, then restart Claude Code.
+- **`node` found but mobile-mcp still won't start:** Ask them to run `/mcp` to check server status, then `/plugin reload asana-workflow` or restart Claude Code.
+
+After explaining the fix, you may offer native shell commands (`xcrun simctl io`, `adb screenrecord`, etc.) as a **limited fallback** for the current session only — but always present installing Node.js/npx first.
 
 ### Prerequisites (check only for the target platform)
 
 - **iOS:** `xcode-select -p` and `xcrun simctl list devices available`
 - **Android:** `adb version`
-- **Node.js:** v22+ (`node --version`) — must be accessible system-wide, not just in your shell session. If `npx` is installed via a version manager (nvm, volta, asdf), create a symlink so it is available to all processes: `sudo ln -sf $(which npx) /usr/local/bin/npx`
+- **Node.js:** v22+ (`node --version`)
 
 ## MCP Disconnection Recovery
 
@@ -35,37 +50,6 @@ If any mobile-mcp tool fails:
 5. Resume from where you left off.
 
 **On `/resume`:** Always re-verify before continuing.
-
-## Setup Guide
-
-If mobile-mcp fails to connect, diagnose in order:
-
-### 1. npx not found (PATH issue)
-
-If you see "command not found: npx" or the MCP server silently fails to start, npx is likely installed but not accessible to the process that launched Claude (common with nvm, volta, or asdf).
-
-Check: `which npx` in a terminal. If it prints a path, run:
-
-```bash
-sudo ln -sf $(which npx) /usr/local/bin/npx
-```
-
-Then restart Claude. This is a one-time fix — the symlink persists across sessions.
-
-### 2. Node.js not installed
-
-If `which npx` returns nothing:
-
-- **macOS:** `brew install node` or download from [nodejs.org](https://nodejs.org)
-- **Linux:** `sudo apt install nodejs npm` or equivalent
-
-Node.js v22+ is required.
-
-### 3. Plugin MCP not loading
-
-If npx works in terminal but mobile-mcp still doesn't appear in `/mcp`:
-
-Run `/plugin reload asana-workflow` or restart Claude. If it still doesn't appear, check that the plugin is installed from the correct marketplace source.
 
 ## App State Reset
 
