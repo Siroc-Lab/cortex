@@ -16,7 +16,7 @@
 1. `mobile_list_available_devices` — must return a device list.
 2. `mobile_take_screenshot` — must return a screen image.
 
-**Blocking** — cannot proceed without both succeeding.
+**Blocking** — cannot proceed without both succeeding. Do NOT attempt to work around this using native shell tools (`xcrun simctl`, `adb`, etc.) — mobile-mcp is a hard dependency, not optional. If it is unavailable, stop and follow the recovery steps below.
 
 ### Prerequisites (check only for the target platform)
 
