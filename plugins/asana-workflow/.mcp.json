@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "mobile-mcp": {
-      "command": "/bin/zsh",
-      "args": ["-lc", "npx -y @mobilenext/mobile-mcp@0.0.52"]
+      "command": "npx",
+      "args": ["-y", "@mobilenext/mobile-mcp@0.0.52"]
     }
   }
 }

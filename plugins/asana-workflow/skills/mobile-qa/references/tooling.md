@@ -22,7 +22,7 @@
 
 - **iOS:** `xcode-select -p` and `xcrun simctl list devices available`
 - **Android:** `adb version`
-- **Node.js:** v22+ (`node --version`)
+- **Node.js:** v22+ (`node --version`) — must be accessible system-wide, not just in your shell session. If `npx` is installed via a version manager (nvm, volta, asdf), create a symlink so it is available to all processes: `sudo ln -sf $(which npx) /usr/local/bin/npx`
 
 ## MCP Disconnection Recovery
 
