@@ -15,12 +15,19 @@ on:
           - patch
           - minor
           - major
+      dry_run:
+        description: "Dry run — print what would happen without modifying anything"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   bump-version:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      DRY_RUN: ${{ inputs.dry_run }}
 
     steps:
       - name: Checkout
@@ -28,13 +35,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump version
+      - name: Compute version
         id: bump
         run: |
-          PLUGIN="${{ github.event.inputs.plugin }}"
-          LEVEL="${{ github.event.inputs.level }}"
+          PLUGIN="${{ inputs.plugin }}"
+          LEVEL="${{ inputs.level }}"
           PLUGIN_FILE="plugins/${PLUGIN}/.claude-plugin/plugin.json"
-          MARKETPLACE_FILE=".claude-plugin/marketplace.json"
 
           if [ ! -f "$PLUGIN_FILE" ]; then
             echo "ERROR: Plugin not found: $PLUGIN_FILE"
@@ -51,8 +57,20 @@ jobs:
           esac
           NEW_VERSION="${major}.${minor}.${patch}"
 
-          # Update plugin.json
-          python3 - "$PLUGIN_FILE" "$NEW_VERSION" <<'EOF'
+          {
+            echo "old_version=$OLD_VERSION"
+            echo "new_version=$NEW_VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write version files
+        if: inputs.dry_run != true
+        run: |
+          PLUGIN="${{ inputs.plugin }}"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+          PLUGIN_FILE="plugins/${PLUGIN}/.claude-plugin/plugin.json"
+          MARKETPLACE_FILE=".claude-plugin/marketplace.json"
+
+          python3 - "$PLUGIN_FILE" "$NEW_VERSION" <<'PYEOF'
           import sys, json
           file, ver = sys.argv[1], sys.argv[2]
           with open(file) as f:
@@ -61,10 +79,9 @@ jobs:
           with open(file, 'w') as f:
               json.dump(data, f, indent=2)
               f.write('\n')
-          EOF
+          PYEOF
 
-          # Sync the plugin entry in marketplace.json
-          python3 - "$MARKETPLACE_FILE" "$PLUGIN" "$NEW_VERSION" <<'EOF'
+          python3 - "$MARKETPLACE_FILE" "$PLUGIN" "$NEW_VERSION" <<'PYEOF'
           import sys, json
           file, name, ver = sys.argv[1], sys.argv[2], sys.argv[3]
           with open(file) as f:
@@ -76,18 +93,15 @@ jobs:
           with open(file, 'w') as f:
               json.dump(data, f, indent=2)
               f.write('\n')
-          EOF
-
-          {
-            echo "old_version=$OLD_VERSION"
-            echo "new_version=$NEW_VERSION"
-          } >> "$GITHUB_OUTPUT"
+          PYEOF
 
       - name: Commit and push
+        if: inputs.dry_run != true
         run: |
-          PLUGIN="${{ github.event.inputs.plugin }}"
+          PLUGIN="${{ inputs.plugin }}"
           OLD="${{ steps.bump.outputs.old_version }}"
           NEW="${{ steps.bump.outputs.new_version }}"
+          TAG="${PLUGIN}@${NEW}"
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -96,17 +110,56 @@ jobs:
                   .claude-plugin/marketplace.json
 
           git commit -m "chore(${PLUGIN}): bump version ${OLD} → ${NEW}"
-          git tag "${PLUGIN}@${NEW}"
-          git push origin HEAD --follow-tags
+          git tag "${TAG}"
+          git push origin HEAD
+          git push origin "${TAG}"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PLUGIN="${{ inputs.plugin }}"
+          NEW="${{ steps.bump.outputs.new_version }}"
+          TAG="${PLUGIN}@${NEW}"
+
+          # Find the previous tag for this plugin
+          PREV_TAG=$(git tag --list "${PLUGIN}@*" --sort=-v:refname | grep -v "^${TAG}$" | head -1)
+
+          # Build changelog from commits touching this plugin's directory
+          if [ -n "$PREV_TAG" ]; then
+            if [ "$DRY_RUN" = "true" ]; then
+              CHANGELOG=$(git log "${PREV_TAG}..HEAD" --oneline -- "plugins/${PLUGIN}/")
+            else
+              CHANGELOG=$(git log "${PREV_TAG}..${TAG}~1" --oneline -- "plugins/${PLUGIN}/")
+            fi
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG="No changes in plugins/${PLUGIN}/ since ${PREV_TAG}"
+            fi
+          else
+            CHANGELOG="Initial release"
+          fi
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "::notice::DRY RUN — would create release:"
+            echo "  tag:   ${TAG}"
+            echo "  title: ${PLUGIN} ${NEW}"
+            echo "  body:"
+            echo "$CHANGELOG"
+          else
+            gh release create "${TAG}" \
+              --title "${PLUGIN} ${NEW}" \
+              --notes "${CHANGELOG}"
+          fi
 
       - name: Summary
         run: |
-          echo "### Version Bumped" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$DRY_RUN" = "true" ]; then HEADING="### [DRY RUN] Version Bump"; else HEADING="### Version Bump"; fi
+          echo "$HEADING" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Plugin | \`${{ github.event.inputs.plugin }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Level  | \`${{ github.event.inputs.level }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Plugin | \`${{ inputs.plugin }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Level  | \`${{ inputs.level }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| Before | \`${{ steps.bump.outputs.old_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
           echo "| After  | \`${{ steps.bump.outputs.new_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Tag    | \`${{ github.event.inputs.plugin }}@${{ steps.bump.outputs.new_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tag    | \`${{ inputs.plugin }}@${{ steps.bump.outputs.new_version }}\` |" >> "$GITHUB_STEP_SUMMARY"
