@@ -33,6 +33,8 @@ Use Chrome DevTools MCP screenshot capabilities to capture evidence at key momen
 - During reproduction (the problematic state)
 - After any state changes relevant to the investigation
 
+**Evidence capture is an inline action, not a stopping point.** After taking a screenshot or any evidence step, immediately continue with the next investigation step. Do not pause, summarize, or wait for operator input unless explicitly asked.
+
 Use `take_screenshot` with `filePath` to save directly to `$EVIDENCE_DIR`:
 
 ```
