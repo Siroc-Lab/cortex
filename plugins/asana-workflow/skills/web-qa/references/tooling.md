@@ -4,26 +4,27 @@
 
 Call `list_pages` to verify Chrome DevTools MCP is connected and functional. This must succeed before any investigation begins.
 
-**Expected success:** Returns a list of open browser pages/tabs. At least one page should be accessible.
+**Expected success:** Returns a list of open browser pages/tabs.
 
 **Failure means:**
-- Chrome DevTools MCP is not configured
-- Chrome is not running with remote debugging enabled
-- The MCP server is not started
+- Chrome DevTools MCP is not configured or not started
+- Node.js is not installed (required for npx)
+- Chrome is not installed
 
 ## Setup Guide
 
-If verification fails, tell the operator:
+**HARD GATE** — do not proceed with investigation if the testing tool is not working. If Chrome DevTools MCP is unavailable, immediately run the diagnostics below **before** doing anything else.
 
-> Chrome DevTools MCP is required but not connected. To set it up:
->
-> 1. Install the Chrome DevTools MCP server
-> 2. Start Chrome with remote debugging: `open -a "Google Chrome" --args --remote-debugging-port=9222`
-> 3. Configure the MCP server in your Claude Code settings
->
-> Once configured, I can verify the connection and proceed.
+### When Chrome DevTools MCP is unavailable
 
-Do NOT proceed with investigation if the testing tool is not working. This is a **blocking** requirement.
+Run this first:
+
+```bash
+which node 2>/dev/null && node --version
+```
+
+- **No `node`:** Node.js is required for the MCP to run via npx — tell the operator to install it, then restart Claude Code.
+- **`node` found:** The MCP should auto-launch and manage its own Chrome instance. If tools are still unavailable, the operator needs to restart their Claude Code session so the MCP server is picked up.
 
 ## Taking Screenshots
 
@@ -32,24 +33,43 @@ Use Chrome DevTools MCP screenshot capabilities to capture evidence at key momen
 - During reproduction (the problematic state)
 - After any state changes relevant to the investigation
 
-Always include screenshots in the report — they are primary evidence.
+**Evidence capture is an inline action, not a stopping point.** After taking a screenshot or any evidence step, immediately continue with the next investigation step. Do not pause, summarize, or wait for operator input unless explicitly asked.
 
-## Screen Recording with experimentalScreencast
+Use `take_screenshot` with `filePath` to save directly to `$EVIDENCE_DIR`:
 
-Use `experimentalScreencast` for issues involving:
+```
+take_screenshot filePath: "$EVIDENCE_DIR/01-initial-state.png"
+```
+
+For small captures (< 2MB) without a filePath it returns base64 — always use `filePath` for evidence that needs to be uploaded. Use descriptive, ordered names (`01-`, `02-`, etc.). Always include screenshots in the report — they are primary evidence.
+
+## Screen Recording
+
+Use `screencast_start` / `screencast_stop` for issues involving:
 - Transitions or animations
 - Multi-step flows where timing matters
 - Flicker, flash, or transient visual bugs
 - Race conditions visible in the UI
 
-**Start recording:**
+**HARD GATE** — `ffmpeg` must be installed and in PATH. Before attempting to record:
+
+```bash
+which ffmpeg 2>/dev/null && ffmpeg -version | head -1
 ```
-Page.startScreencast with format: "png", quality: 80, everyNthFrame: 2
+
+- **No `ffmpeg`:** Tell the operator: "Video recording requires ffmpeg. Please install it and restart your terminal." Do not proceed with recording until confirmed.
+- **`ffmpeg` found:** Proceed with recording.
+
+If the operator declines to install ffmpeg, fall back to sequential screenshots and note in the report that video evidence was not available.
+
+**Start recording** (saves to `$EVIDENCE_DIR`):
+```
+screencast_start path: "$EVIDENCE_DIR/recording.mp4"
 ```
 
 **Stop recording:**
 ```
-Page.stopScreencast
+screencast_stop
 ```
 
-Capture frames during the reproduction and assemble into a sequence. Include the recording in the report when visual motion is relevant to the finding.
+The tool produces an MP4 file directly. Include it in the evidence upload alongside the assertion-point screenshot.
