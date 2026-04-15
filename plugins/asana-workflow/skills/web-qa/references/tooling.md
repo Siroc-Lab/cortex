@@ -2,14 +2,14 @@
 
 ## Verification
 
-Call `listPages` to verify Chrome DevTools MCP is connected and functional. This must succeed before any investigation begins.
+Call `list_pages` to verify Chrome DevTools MCP is connected and functional. This must succeed before any investigation begins.
 
-**Expected success:** Returns a list of open browser pages/tabs. At least one page should be accessible.
+**Expected success:** Returns a list of open browser pages/tabs.
 
 **Failure means:**
-- Chrome DevTools MCP is not configured
-- Chrome is not running with remote debugging enabled
-- The MCP server is not started
+- Chrome DevTools MCP is not configured or not started
+- Node.js is not installed (required for npx)
+- Chrome is not installed
 
 ## Setup Guide
 
@@ -23,14 +23,8 @@ Run this first:
 which node 2>/dev/null && node --version
 ```
 
-- **No `node`:** Node.js v22+ is required — tell the operator they need to install it, then restart Claude Code.
-- **`node` found:** Chrome DevTools MCP runs via npx, so Node is fine. Check Chrome instead:
-  1. Is Chrome running with remote debugging? If not, tell the operator: `open -na "Google Chrome" --args --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-qa`
-  2. Reload the plugin: `/plugin reload asana-workflow`
-
-## Safety Rule: Never Kill Chrome
-
-**Never terminate, kill, or close Chrome** (e.g. `pkill`, `killall`, `osascript quit`) without explicit operator approval. The operator may have open work, sessions, or tabs that would be lost. If Chrome needs to be restarted to enable remote debugging, ask first.
+- **No `node`:** Node.js is required for the MCP to run via npx — tell the operator to install it, then restart Claude Code.
+- **`node` found:** The MCP should auto-launch and manage its own Chrome instance. If tools are still unavailable, the operator needs to restart their Claude Code session so the MCP server is picked up.
 
 ## Taking Screenshots
 
@@ -55,7 +49,16 @@ Use `screencast_start` / `screencast_stop` for issues involving:
 - Flicker, flash, or transient visual bugs
 - Race conditions visible in the UI
 
-**Requires:** `ffmpeg` installed and in PATH. If missing, fall back to screenshots only.
+**HARD GATE** — `ffmpeg` must be installed and in PATH. Before attempting to record:
+
+```bash
+which ffmpeg 2>/dev/null && ffmpeg -version | head -1
+```
+
+- **No `ffmpeg`:** Tell the operator: "Video recording requires ffmpeg. Please install it and restart your terminal." Do not proceed with recording until confirmed.
+- **`ffmpeg` found:** Proceed with recording.
+
+If the operator declines to install ffmpeg, fall back to sequential screenshots and note in the report that video evidence was not available.
 
 **Start recording** (saves to `$EVIDENCE_DIR`):
 ```
