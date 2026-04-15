@@ -41,15 +41,12 @@ After explaining the fix, you may offer native shell commands (`xcrun simctl io`
 
 ## MCP Disconnection Recovery
 
-If any mobile-mcp tool fails:
+If any mobile-mcp tool fails mid-session:
 
 1. Tell the operator.
-2. Restart: `npx -y @mobilenext/mobile-mcp@latest &`
-3. If still broken, ask operator to run `/mcp` and restart mobile-mcp.
-4. Re-verify with `mobile_list_available_devices`.
-5. Resume from where you left off.
-
-**On `/resume`:** Always re-verify before continuing.
+2. Ask them to check `/mcp` and restart mobile-mcp from there.
+3. If that doesn't work, restart the Claude Code session.
+4. Re-verify with `mobile_list_available_devices` before continuing.
 
 ## App State Reset
 
