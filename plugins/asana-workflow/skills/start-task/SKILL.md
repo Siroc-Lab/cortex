@@ -172,18 +172,20 @@ Determine which QA skill to invoke. This applies to **all task categories** — 
 
 Check in order:
 
-1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa` or `qa-skill: mobile-qa`). If found, use it.
+1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa`, `qa-skill: mobile-qa`, or `qa-skill: none`). If found, use it.
 2. **Project signals** — infer from project files:
    - `package.json` (without React Native), `vite.config.*`, `next.config.*` → `web-qa`
    - `.xcodeproj`, `.xcworkspace`, `Info.plist` → `mobile-qa`
    - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
    - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
-3. **Ambiguous or no signal** — ask the operator (blocking):
+   - No UI framework detected (pure backend, CLI, API, library, infrastructure) → `none`
+3. **Ambiguous** — ask the operator (blocking):
    > "Which QA skill should I use?
    > 1. `web-qa` (browser-based, Chrome DevTools MCP)
-   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)"
+   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)
+   > 3. `none` (no visual UI to verify — backend, API, CLI, library)"
 
-Use the resolved QA skill for all QA invocations in this task.
+Use the resolved QA skill for all QA invocations in this task. A resolution of `none` means the project has no visual component — Steps 10b–10e are skipped entirely.
 
 ### Step 10b: Verify Bug
 
@@ -208,6 +210,8 @@ Invoke `fix-bug` with the QA report from Step 10b as enriched context. This give
 ### Step 10e: QA Verification (Non-Bug Tasks)
 
 **Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
+
+**If the QA skill resolved to `none` (Step 10a), skip this step entirely and proceed to Step 11.** There is no visual UI to verify for backend, API, CLI, or library work.
 
 **HARD GATE — always stop and wait for the operator's answer. Auto mode's "minimize interruptions" directive does NOT override this step.**
 
