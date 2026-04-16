@@ -6,7 +6,7 @@ All calls require `Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN`.
 
 ```bash
 curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/projects/<sprint_project_gid>/custom_field_settings\
+  "https://app.asana.com/api/1.0/projects/<active_sprint_gid>/custom_field_settings\
 ?opt_fields=custom_field.gid,custom_field.name,custom_field.type,\
 custom_field.enum_options,custom_field.enum_options.gid,custom_field.enum_options.name"
 ```

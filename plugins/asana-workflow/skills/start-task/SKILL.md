@@ -54,11 +54,11 @@ The Asana task URL is passed as `$ARGUMENTS`. If empty or invalid, prompt for it
 
 Fetch the full task with custom fields, memberships, assignee, and notes via the `asana-api` skill. See **`references/asana-patterns.md`** for required `opt_fields`.
 
-Present a quick summary for confirmation: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify the task's project memberships using the board classification rules in **`references/board-resolution.md`** (plugin root) — sprint boards match `ENG | Sprint \d+\.\d+`, everything else with `ENG | ` prefix is a backlog board.
+Present a quick summary for confirmation: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify the task's project memberships using the board classification rules in **`plugins/asana-workflow/references/board-resolution.md`** — sprint boards match `ENG | Sprint \d+\.\d+`, everything else with `ENG | ` prefix is a backlog board.
 
 ### Step 3: Validate Sprint-Readiness
 
-Run four validation checks: Active sprint membership, Estimated time, Product Status = Assigned, and ID field presence. See **`references/validation-rules.md`** for check details, failure display format, fix-offer logic, and skip rules. The validation-rules reference loads the board registry cache (see **`references/board-resolution.md`** at plugin root) to resolve the active sprint.
+Run four validation checks: Active sprint membership, Estimated time, Product Status = Assigned, and ID field presence. See **`references/validation-rules.md`** for check details, failure display format, fix-offer logic, and skip rules. The validation-rules reference loads the board registry cache (see **`plugins/asana-workflow/references/board-resolution.md`**) to resolve the active sprint.
 
 Report failures as a checklist. Active sprint membership, Estimated time, and Product Status are all blocking — offer to set the latter two via API, but do not proceed until all three pass. Only the ID field can be skipped after a warning.
 

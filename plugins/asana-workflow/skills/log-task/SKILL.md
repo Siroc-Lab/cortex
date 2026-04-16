@@ -166,7 +166,7 @@ Report success:
 ```
 ✓ Task created: Fix null pointer in export pipeline when CSV is empty
   ID:      MT251-182
-  Asana:   https://app.asana.com/0/<sprint_project_gid>/<task_gid>
+  Asana:   https://app.asana.com/0/<active_sprint_gid>/<task_gid>
   Sprint:  ENG | Sprint 26.16
   Boards:  ENG | Bugs & Issues, ENG | MT251 :: Mobile Toolkit
 ```
@@ -188,7 +188,7 @@ Ask the user whether to proceed:
 
 **Wait for the user's response.**
 
-- If start → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<sprint_project_gid>/<task_gid>`.
+- If start → invoke `start-task` with `$ARGUMENTS = https://app.asana.com/0/<active_sprint_gid>/<task_gid>`.
 - If later (or any non-committal response) → stop here. The user can start later with `/start-task <url>`.
 
 ---
@@ -225,7 +225,7 @@ Follow the worktree creation and file copy steps in `references/worktree-flow.md
 
 Thread the Asana task GID and URL so `ship-it` can skip re-asking:
 - Task GID: `<task_gid>`
-- Task URL: `https://app.asana.com/0/<sprint_project_gid>/<task_gid>`
+- Task URL: `https://app.asana.com/0/<active_sprint_gid>/<task_gid>`
 
 ---
 
