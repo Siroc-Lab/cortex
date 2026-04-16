@@ -50,18 +50,17 @@ Load all `backlog_boards` from cache. Score each by relevance to the task:
 
 ### Presentation
 
-Present a ranked list with the top match(es) pre-selected. The user always confirms or picks different ones:
+Only show boards that scored > 0 (i.e., at least one scoring rule matched). Pre-select them. Do **not** list all available boards — instead offer an escape hatch for the user to name others:
 
 ```
 Suggested boards for "Fix crash on empty CSV export":
   [x] ENG | Bugs & Issues  (matched: bug category)
-  [ ] ENG | MT251 :: Mobile Toolkit
-  [ ] ENG | BI :: Business Intelligence
-  [ ] ENG | Maintenance
 
 Sprint: ENG | Sprint 26.16  (auto-detected)
 
-Confirm boards, or type numbers to change: [Y/n]
+Confirm boards, or name other boards to add: [Y/n]
 ```
+
+If the user names a board not in the suggested list, fuzzy-match it against the full `backlog_boards` cache by name. If no boards scored > 0, say "No strong board match — name the backlog(s) to add this to" and list all available boards so the user can pick.
 
 The sprint board is always added automatically — it is not part of the suggestion list.

@@ -110,7 +110,9 @@ Extract from conversation context as much as possible. Fill gaps with smart defa
 | **Assignee** | Current user (Fix Done) / Unassigned (Plan Only) | |
 | **Product Status** | "Assigned" enum option | Match case-insensitively |
 
-**Sizing/Estimate for Fix Done**: Brief fix (< 1h) → smallest. Moderate (1–4h) → second-smallest. Substantial (4h+) → medium. Err toward smaller.
+**Sizing/Estimate for Fix Done**: Brief fix (< 01:00) → smallest. Moderate (01:00–04:00) → second-smallest. Substantial (04:00+) → medium. Err toward smaller.
+
+**Time format**: Always display and submit estimate values in `hh:mm` format (e.g., `00:30`, `01:00`, `04:00`). Never use shorthand like `30m`, `1h`, `1d`.
 
 **Priority**: Default to the highest urgency enum option using semantic matching — do not rely on list position. If the conversation describes something non-critical ("nice to have", "minor cleanup"), drop to a mid-level option instead.
 
@@ -130,15 +132,13 @@ Task draft:
     Sprint:    ENG | Sprint 26.16  (auto-detected)
     Backlogs:
       [x] ENG | Bugs & Issues  (matched: bug category)
-      [ ] ENG | MT251 :: Mobile Toolkit
-      [ ] ENG | BI :: Business Intelligence
 
-    Confirm board selection, or type numbers to change.
+    Confirm boards, or name other boards to add.
 
   Fields:
     Priority:       P0            [options: P0, P1, P2, P3]
     Sizing:         XS            [options: XS, S, M, L, XL]
-    Estimate:       30m           [options: 30m, 1h, 2h, 4h, 1d]
+    Estimate:       00:30         [options: 00:30, 01:00, 02:00, 04:00, 08:00]
     Product Status: Assigned      [options: Assigned, In Progress, Done]
     Assignee:       Francisco Javier (you)
 
