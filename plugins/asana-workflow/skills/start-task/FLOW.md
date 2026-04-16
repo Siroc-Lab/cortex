@@ -76,8 +76,8 @@
              ┌────────────────────────────────────────────┐
              │  3 · Validate Sprint-Readiness             │
              │                                            │
-             │  ◻ Sprint membership  BLOCKING             │
-             │    (must be added in Asana manually)       │
+             │  ◻ Active sprint membership  BLOCKING      │
+             │    (must be in current sprint in Asana)    │
              │  ◻ Estimated time     BLOCKING  → API fix  │
              │  ◻ Product Status     BLOCKING  → API fix  │
              │  ◻ ID field           WARN (skippable)     │
