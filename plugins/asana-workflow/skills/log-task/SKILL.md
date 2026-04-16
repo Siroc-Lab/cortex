@@ -34,16 +34,11 @@ Extract GIDs from URLs using the pattern `app.asana.com/0/(\d+)` — the GID is 
 |---|---|
 | "sprint", "current sprint", "new sprint", "use sprint" | sprint override |
 | "backlog", "product backlog", "use backlog", "new backlog" | backlog override |
-| No context words | ambiguous |
+| No context words | ambiguous — ask: "Is this the sprint board or a backlog board?" |
 
-For each URL detected, resolve the project name and workspace GID via the API (see `references/board-config.md`). Store as `sprint_override` and/or `backlog_override` (each with `gid` + `name`), and `workspace_override` if returned.
+For each URL detected, resolve the project name and workspace GID via the API (see `references/board-config.md`). Store resolved overrides to merge into the board cache in Step 2.
 
-**Ambiguity rules:**
-- Two URLs with no context → ask once: "Which is the sprint board and which is the backlog?"
-- One URL with no context → ask: "Is this the sprint board or the backlog?"
-- URL that isn't a valid Asana project URL → ignore silently
-
-Carry resolved overrides into Step 2.
+Multiple backlog URL overrides are supported — each is added to the cache's `backlog_boards` list if not already present (matched by GID).
 
 ---
 
@@ -68,38 +63,18 @@ When confident, announce the inferred variant and proceed immediately — do not
 
 ## Step 2: Load Board Config
 
-Config lives at `~/.claude/asana-workflow/<project-key>.json` — NOT in the repo.
+Load the board registry cache following `references/board-config.md`, which delegates to the shared `board-resolution.md` module.
 
-Read `references/board-config.md` for the project key derivation command, config file structure, and save/update template.
+1. Load cache from `~/.claude/asana-workflow/<project-key>.json`
+2. If cache missing → Full Discovery runs automatically (queries workspace, classifies all boards, writes cache)
+3. If cache exists → sprint freshness check runs automatically (refreshes if `due_on` is past)
+4. Merge any URL overrides from Step 0 (see `references/board-config.md` for merge rules)
 
-### Apply overrides from Step 0
-
-After loading (or failing to load) config, merge any overrides:
-
-- If `sprint_override` is set → replace `sprint_project_gid` and `sprint_project_name`
-- If `backlog_override` is set → replace `backlog_project_gid` and `backlog_project_name`
-- If `workspace_override` is set and config has no `workspace_gid` → set it
-
-If any override was applied, save the updated config and report:
-```
-Sprint board updated: ENG | Sprint 27.x  (was: ENG | Sprint 26.x)
-Config saved to ~/.claude/asana-workflow/<project-key>.json
-```
-
-### If config is missing — ask for URLs
-
-If config is missing AND no overrides were provided for a board, ask:
-
-```
-No board config found for this project. I need the Asana URLs for:
-
-1. Sprint board — paste the URL from your browser (app.asana.com/0/<project-gid>/...)
-2. Backlog board — paste the URL from your browser
-
-I'll save them to ~/.claude/asana-workflow/<project-key>.json (not in the repo).
-```
-
-If overrides cover one board but not the other, ask only for the missing one. Once URLs are provided, derive GIDs and workspace GID via the API (see `references/board-config.md`). Never ask the user for raw GIDs.
+After loading, you have:
+- `active_sprint` — the current sprint board (GID + name)
+- `backlog_boards` — all available backlog boards (GID + name each)
+- `workspace_gid` — for task creation
+- `asana_token_env` — the env var name for the Asana token
 
 ---
 
@@ -152,8 +127,13 @@ Task draft:
                   rows. Root cause: missing empty-check before column iteration.
 
   Boards:
-    Sprint:  ENG | Sprint 26.x  (GID: 1234567890)
-    Backlog: Product Backlog    (GID: 9876543210)
+    Sprint:    ENG | Sprint 26.16  (auto-detected)
+    Backlogs:
+      [x] ENG | Bugs & Issues  (matched: bug category)
+      [ ] ENG | MT251 :: Mobile Toolkit
+      [ ] ENG | BI :: Business Intelligence
+
+    Confirm board selection, or type numbers to change.
 
   Fields:
     Priority:       P0            [options: P0, P1, P2, P3]
@@ -176,8 +156,8 @@ If a field couldn't be discovered, show it as `— (not available in this projec
 Read `references/asana-api-calls.md` for all curl commands. Execute in this order — do not skip or reorder:
 
 1. **6a** — Create the task (workspace + assignee only, no custom fields)
-2. **6b** — Add to Sprint project
-3. **6c** — Add to Backlog project
+2. **6b** — Add to the active sprint project
+3. **6c** — Add to each user-confirmed backlog board (loop — one `addProject` call per board)
 4. **6d** — Set custom fields via PUT (now that the task is in a project)
 5. **6d cont** — Fetch the auto-assigned task ID (retry up to 3 times, 10s apart). If still absent after all retries, derive a prefix from context:
    - Bug fix → `fix/<slug>`, Feature → `feat/<slug>`, Tech debt → `chore/<slug>`, Docs → `docs/<slug>`
@@ -187,7 +167,8 @@ Report success:
 ✓ Task created: Fix null pointer in export pipeline when CSV is empty
   ID:      MT251-182
   Asana:   https://app.asana.com/0/<sprint_project_gid>/<task_gid>
-  Boards:  ENG | Sprint 26.x + Product Backlog
+  Sprint:  ENG | Sprint 26.16
+  Boards:  ENG | Bugs & Issues, ENG | MT251 :: Mobile Toolkit
 ```
 
 **Error handling:**
