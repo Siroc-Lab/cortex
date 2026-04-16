@@ -54,13 +54,13 @@ The Asana task URL is passed as `$ARGUMENTS`. If empty or invalid, prompt for it
 
 Fetch the full task with custom fields, memberships, assignee, and notes via the `asana-api` skill. See **`references/asana-patterns.md`** for required `opt_fields`.
 
-Present a quick summary for confirmation: task name, assignee, category, task ID, and sprint.
+Present a quick summary for confirmation: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify the task's project memberships using the board classification rules in **`references/board-resolution.md`** (plugin root) — sprint boards match `ENG | Sprint \d+\.\d+`, everything else with `ENG | ` prefix is a backlog board.
 
 ### Step 3: Validate Sprint-Readiness
 
-Run four validation checks: Sprint project membership, Estimated time, Product Status = Assigned, and ID field presence. See **`references/validation-rules.md`** for check details, failure display format, fix-offer logic, and skip rules.
+Run four validation checks: Active sprint membership, Estimated time, Product Status = Assigned, and ID field presence. See **`references/validation-rules.md`** for check details, failure display format, fix-offer logic, and skip rules. The validation-rules reference loads the board registry cache (see **`references/board-resolution.md`** at plugin root) to resolve the active sprint.
 
-Report failures as a checklist. Sprint membership, Estimated time, and Product Status are all blocking — offer to set the latter two via API, but do not proceed until all three pass. Only the ID field can be skipped after a warning.
+Report failures as a checklist. Active sprint membership, Estimated time, and Product Status are all blocking — offer to set the latter two via API, but do not proceed until all three pass. Only the ID field can be skipped after a warning.
 
 ### Step 4: Fetch Subtasks
 
@@ -238,7 +238,7 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 | Task ID | From task custom fields (Step 2) |
 | Branch name | Created in Step 7 |
 | Draft PR URL | Captured in Step 8 |
-| Sprint project GID | From task memberships (Step 2) |
+| Sprint project GID | From board cache `active_sprint.gid` (loaded in Step 3) |
 | Section mappings | Discovered when moving to "In Progress" (Step 9) |
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
