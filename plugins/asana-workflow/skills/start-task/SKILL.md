@@ -189,6 +189,8 @@ Use the resolved QA skill for all QA invocations in this task. A resolution of `
 
 ### Step 10b: Verify Bug
 
+**If the QA skill resolved to `none` (Step 10a), skip Steps 10b–10d entirely.** There is no visual QA skill to invoke — go straight to Step 10c (fix-bug without QA context).
+
 Invoke the resolved QA skill in **investigate** mode with the bug description from the Asana ticket as the question and the SUT identifier (URL or app bundle ID, if known from CLAUDE.md or task notes).
 
 - **Confirmed** (bug reproduced with evidence) → the QA skill posts the report to the Asana task (Step 6 in the generic-qa process). Proceed to Step 10c, passing the full report as context.
@@ -196,13 +198,15 @@ Invoke the resolved QA skill in **investigate** mode with the bug description fr
 
 ### Step 10c: Fix Bug
 
-Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
+Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation. If Step 10b was skipped (QA skill is `none`), invoke `fix-bug` with just the Asana ticket context.
 
 `fix-bug` returns after root cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (Steps 10d and 11).
 
 ### Step 10d: Verify Fix (BLOCKING)
 
-**This step cannot be skipped.** After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b. The QA skill will rebuild, deploy, and replay the steps.
+**If the QA skill resolved to `none` (Step 10a), skip this step and proceed to Step 11.** The TDD gate in fix-bug already validates the fix through tests.
+
+**This step cannot be skipped** (when a QA skill is available). After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b. The QA skill will rebuild, deploy, and replay the steps.
 
 - **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
