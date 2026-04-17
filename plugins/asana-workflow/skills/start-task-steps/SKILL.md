@@ -92,7 +92,7 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 
 1. Open checkpoint: set Step 2 → `in_progress`, Attempts +1, update `last_updated`.
 2. Fetch the full task via the `asana-api` skill with all required `opt_fields` (see `references/asana-patterns.md`).
-3. Present a quick summary: task name, assignee, category, task ID, sprint.
+3. Present a quick summary: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify memberships per `plugins/asana-workflow/references/board-resolution.md`.
 4. Write checkpoint: Step 2 → `[x]` | `completed` | Auto `[x]` | Comment: `<task-id> — <task-name>`. Update frontmatter: `task_id`.
 
 ---
@@ -100,8 +100,8 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 ### Step 3: Validate Sprint-Readiness
 
 1. Open checkpoint: set Step 3 → `in_progress`, Attempts +1, update `last_updated`.
-2. Run four validation checks: Sprint project membership, Estimated time, Product Status = Assigned, ID field. See `references/validation-rules.md` for details.
-3. Report failures as a checklist. Sprint membership, Estimated time, and Product Status are blocking — offer to set the latter two via API. Only the ID field can be skipped. Do not proceed until all blocking checks pass.
+2. Run four validation checks: Active sprint membership, Estimated time, Product Status = Assigned, ID field. See `references/validation-rules.md` for details. The validation-rules reference loads the board registry cache (see `plugins/asana-workflow/references/board-resolution.md`) to resolve the active sprint.
+3. Report failures as a checklist. Active sprint membership, Estimated time, and Product Status are blocking — offer to set the latter two via API. Only the ID field can be skipped. Do not proceed until all blocking checks pass.
 4. If checks require fixing (user interaction), re-run this step after each fix (return to sub-step 1, incrementing Attempts again).
 5. Write checkpoint: Step 3 → `[x]` | `completed` | Auto `[ ]` | Comment: `All checks passed` or `Fixed: <what was set>`.
 
@@ -250,7 +250,7 @@ Skip this step if Step 6 found an existing branch to resume — go straight to w
    | Task ID | Step 2 (checkpoint frontmatter: `task_id`) |
    | Branch name | Step 7 (checkpoint frontmatter: `branch`) |
    | Draft PR URL | Step 8 (checkpoint comment) |
-   | Sprint project GID | Step 2 (task memberships) |
+   | Sprint project GID | Board cache `active_sprint.gid` (loaded in Step 3) |
    | Section mappings | Step 9 (discovered when moving to "In Progress") |
 
    `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.

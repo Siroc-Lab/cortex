@@ -6,7 +6,7 @@ All calls require `Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN`.
 
 ```bash
 curl -s -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
-  "https://app.asana.com/api/1.0/projects/<sprint_project_gid>/custom_field_settings\
+  "https://app.asana.com/api/1.0/projects/<active_sprint_gid>/custom_field_settings\
 ?opt_fields=custom_field.gid,custom_field.name,custom_field.type,\
 custom_field.enum_options,custom_field.enum_options.gid,custom_field.enum_options.name"
 ```
@@ -43,18 +43,25 @@ Save the returned `task_gid`. Send `"assignee": null` explicitly for Plan Only.
 ```bash
 curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":{"project":"<sprint_project_gid>"}}' \
+  -d '{"data":{"project":"<active_sprint_gid>"}}' \
   "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
 ```
 
-## 6c. Add to Backlog project
+The `<active_sprint_gid>` comes from the board cache's `active_sprint.gid`.
+
+## 6c. Add to Backlog boards
+
+Loop over the user-confirmed backlog boards. Call `addProject` once per board:
 
 ```bash
+# Repeat for each confirmed backlog board GID
 curl -s -X POST -H "Authorization: Bearer $ASANA_PERSONAL_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"data":{"project":"<backlog_project_gid>"}}' \
+  -d '{"data":{"project":"<backlog_board_gid>"}}' \
   "https://app.asana.com/api/1.0/tasks/<task_gid>/addProject"
 ```
+
+A task can belong to multiple projects — each call adds one membership. If any single call fails, report the error but continue with the remaining boards.
 
 ## 6d. Set custom fields
 

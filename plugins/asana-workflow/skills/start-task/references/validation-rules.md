@@ -2,11 +2,15 @@
 
 Four checks determine whether a task is ready to start. Track which pass and which fail, then present results as a checklist.
 
-## Check 1: Sprint Project Membership
+## Check 1: Active Sprint Membership
 
-The task must be a member of a project matching the pattern `ENG | Sprint *`. Look in the `memberships` array for a project name starting with "ENG | Sprint".
+Before running checks, load the board registry cache following `board-resolution.md` (at the plugin root: `plugins/asana-workflow/references/board-resolution.md`). If the cache doesn't exist, run the Full Discovery flow. If `active_sprint.due_on` is in the past, run Sprint Auto-Refresh.
 
-**This check is non-negotiable.** If the task is not in a Sprint project, it cannot be started — there is no skip for this. The task must be added to a Sprint in Asana first.
+The task must be a member of the **active sprint** — compare the task's `memberships[].project.gid` values against `active_sprint.gid` from the cache.
+
+A task that is only in an old/completed sprint does **not** pass this check — it must be pulled into the current active sprint in Asana first.
+
+**This check is non-negotiable.** If the task is not in the active sprint, it cannot be started — there is no skip for this.
 
 ## Check 2: Estimated Time
 
@@ -30,10 +34,10 @@ There must be a text-type custom field whose `display_value` matches an ID patte
 
 Separate blocking failures from skippable ones. Present them distinctly:
 
-**If any blocking check fails (Sprint, Estimated time, Product Status):**
+**If any blocking check fails (Active sprint membership, Estimated time, Product Status):**
 ```
 Sprint-Readiness Checks:
-- [x] Sprint project membership — ENG | Sprint 26.12
+- [x] Active sprint membership — ENG | Sprint 26.16
 - [ ] Estimated time — Not set (REQUIRED)
 - [ ] Product Status — "Ready" (needs "Assigned") (REQUIRED)
 - [x] Has ID: MT251-12
@@ -41,7 +45,7 @@ Sprint-Readiness Checks:
 Two required fields are missing. Want me to set them via API?
 ```
 
-For Sprint membership: the task must be added to a Sprint in Asana manually — cannot be set via API.
+For active sprint membership: the task must be added to the current sprint (ENG | Sprint 26.16) in Asana manually — cannot be set via API.
 For Estimated time: prompt for the estimate, then set via API.
 For Product Status: offer to set to "Assigned" via API.
 
@@ -50,7 +54,7 @@ Do not proceed until all three blocking checks pass.
 **If only the ID field fails (skippable):**
 ```
 Sprint-Readiness Checks:
-- [x] Sprint project membership — ENG | Sprint 26.12
+- [x] Active sprint membership — ENG | Sprint 26.16
 - [x] Estimated time — 3h
 - [x] Product Status — Assigned
 - [ ] ID field — Not set
@@ -62,6 +66,6 @@ Warn once about traceability risks, then proceed if skipped.
 
 ## Skip Rules
 
-**Sprint membership, Estimated time, Product Status** — never skippable. Block the workflow. Offer to set Estimated time and Product Status via API, but do not proceed until all three are resolved.
+**Active sprint membership, Estimated time, Product Status** — never skippable. Block the workflow. Offer to set Estimated time and Product Status via API, but do not proceed until all three are resolved.
 
 **ID field** — if the intent is to skip ("just start", "I'll fix Asana later"), warn once about traceability risks, then proceed.
