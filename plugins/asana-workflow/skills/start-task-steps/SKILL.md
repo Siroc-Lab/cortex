@@ -92,7 +92,7 @@ If a step fails or blocks, set State → `blocked` and follow the Pause Flow. Ne
 
 1. Open checkpoint: set Step 2 → `in_progress`, Attempts +1, update `last_updated`.
 2. Fetch the full task via the `asana-api` skill with all required `opt_fields` (see `references/asana-patterns.md`).
-3. Present a quick summary: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify the task's project memberships using the board classification rules in `plugins/asana-workflow/references/board-resolution.md` — sprint boards match `ENG | Sprint \d+\.\d+`, everything else with `ENG | ` prefix is a backlog board.
+3. Present a quick summary: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify memberships per `plugins/asana-workflow/references/board-resolution.md`.
 4. Write checkpoint: Step 2 → `[x]` | `completed` | Auto `[x]` | Comment: `<task-id> — <task-name>`. Update frontmatter: `task_id`.
 
 ---

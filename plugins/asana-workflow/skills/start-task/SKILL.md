@@ -54,7 +54,7 @@ The Asana task URL is passed as `$ARGUMENTS`. If empty or invalid, prompt for it
 
 Fetch the full task with custom fields, memberships, assignee, and notes via the `asana-api` skill. See **`references/asana-patterns.md`** for required `opt_fields`.
 
-Present a quick summary for confirmation: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify the task's project memberships using the board classification rules in **`plugins/asana-workflow/references/board-resolution.md`** — sprint boards match `ENG | Sprint \d+\.\d+`, everything else with `ENG | ` prefix is a backlog board.
+Present a quick summary for confirmation: task name, assignee, category, task ID, sprint, and backlog board memberships. Classify memberships per **`plugins/asana-workflow/references/board-resolution.md`**.
 
 ### Step 3: Validate Sprint-Readiness
 
