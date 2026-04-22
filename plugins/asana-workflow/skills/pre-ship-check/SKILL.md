@@ -29,7 +29,9 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 - **Found** → gate passes. Proceed to Step 2.
 - **Not found** → continue to 1c.
 
-**1c. Determine task category** — check conversation context for the task's Category field. If not in context, fetch the task details (via `asana-api` Fetch Task Details) to read the Category custom field.
+**1c. Check QA skill resolution** — if the QA skill resolved to `none` in this session (backend, API, CLI, or library work with no visual UI), the gate passes. Skip to Step 2.
+
+**1d. Determine task category** — check conversation context for the task's Category field. If not in context, fetch the task details (via `asana-api` Fetch Task Details) to read the Category custom field.
 
 - **Bug** → **BLOCKING**. Report:
   > QA verification has not passed for this bug task. The fix must be verified via the QA skill before shipping.

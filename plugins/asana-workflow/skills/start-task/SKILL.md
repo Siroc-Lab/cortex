@@ -172,18 +172,22 @@ Determine which QA skill to invoke. This applies to **all task categories** — 
 
 Check in order:
 
-1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa` or `qa-skill: mobile-qa`). If found, use it.
+1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa`, `qa-skill: mobile-qa`, or `qa-skill: none`). If found, use it.
 2. **Project signals** — infer from project files:
    - `package.json` (without React Native), `vite.config.*`, `next.config.*` → `web-qa`
    - `.xcodeproj`, `.xcworkspace`, `Info.plist` → `mobile-qa`
    - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
    - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
-3. **Ambiguous or no signal** — ask the operator (blocking):
+   - No UI framework detected (pure backend, CLI, API, library, infrastructure) → `none`
+3. **Ambiguous** — ask the operator (blocking):
    > "Which QA skill should I use?
    > 1. `web-qa` (browser-based, Chrome DevTools MCP)
-   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)"
+   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)
+   > 3. `none` (no visual UI to verify — backend, API, CLI, library)"
 
 Use the resolved QA skill for all QA invocations in this task.
+
+**If `none`:** For bug tasks, skip 10b and 10d (no visual QA to run) but still run 10c (fix-bug with Asana ticket context only). For non-bug tasks, skip straight to Step 11.
 
 ### Step 10b: Verify Bug
 
@@ -194,7 +198,7 @@ Invoke the resolved QA skill in **investigate** mode with the bug description fr
 
 ### Step 10c: Fix Bug
 
-Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation.
+Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation. If Step 10b was skipped (QA skill is `none`), invoke `fix-bug` with just the Asana ticket context.
 
 `fix-bug` returns after root cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (Steps 10d and 11).
 
