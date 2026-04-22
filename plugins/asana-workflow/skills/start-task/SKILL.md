@@ -205,12 +205,9 @@ The branch is already created and checked out — the downstream skill works on 
 
 ### QA Sub-flow
 
-- **Bug tasks** — run `QA: Resolve` → `QA: Investigate Bug` → `QA: Fix Bug` → `QA: Verify Fix`. Loop `QA: Fix Bug` / `QA: Verify Fix` on failure.
-- **Non-bug tasks** — run `QA: Resolve`, then after the development workflow completes run `QA: Verify Non-Bug` (hard gate, cannot be auto-answered). If yes, invoke the QA skill; if skip, proceed.
-- **Fast mode** — skip the entire sub-flow (mark every QA row `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
-- **Resolved skill = `none`** — for bugs, skip `QA: Investigate Bug` and `QA: Verify Fix` but still run `QA: Fix Bug` with ticket-only context. For non-bugs, skip `QA: Verify Non-Bug`.
+Between Step 10 and Step 11 — after the development workflow completes for non-bugs, or immediately after routing for bugs — run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally).
 
-See **`plugins/asana-workflow/references/qa-routing.md`** for the full resolution logic, each sub-step's invocation details, and outcome handling.
+**In fast mode** the sub-flow is skipped entirely. In steps-mode checkpoints, mark every QA row `[~]` / `skipped` / `fast mode`.
 
 ### Step 11: Ship It
 
