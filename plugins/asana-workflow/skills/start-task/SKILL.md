@@ -7,13 +7,12 @@ description: >
   "begin this task", or pastes an Asana URL with intent to start development. Orchestrates the full
   lifecycle: validates sprint-readiness, sets up the branch and draft PR, routes to the right
   development workflow (feature-dev, fix-bug, or brainstorm), and ships via ship-it when done.
-  Also handles pausing blocked work ("park this", "I'm blocked", "pause task", "put this on hold")
-  and resuming ("resume task", "pick up where I left off", "continue [task-id]"). For long, complex,
-  or interruptible tasks that need step-by-step checkpoint tracking, add "steps" to the arguments —
-  "start task steps", "with checkpoints". For a shortcut that runs the full Asana orchestration and
-  ship-it but skips sub-skill routing (feature-dev, brainstorming, fix-bug) and implements inline
-  instead, add "fast" to the arguments — "start task fast", "fast mode", "just start coding".
-argument-hint: <asana-task-url> [brainstorm|feature-dev|fast] [steps]
+  Every run writes a step-by-step checkpoint file so work can be resumed after any interruption
+  ("resume task", "pick up where I left off", "continue [task-id]"). For a shortcut that runs the
+  full Asana orchestration and ship-it but skips sub-skill routing (feature-dev, brainstorming,
+  fix-bug) and implements inline instead, add "fast" to the arguments — "start task fast",
+  "fast mode", "just start coding".
+argument-hint: <asana-task-url> [brainstorm|feature-dev|fast]
 ---
 
 # Start Task
@@ -32,12 +31,9 @@ Parse `$ARGUMENTS` once and establish these flags. The rest of the skill refers 
 | Flag | Set when `$ARGUMENTS` contains | Effect |
 |------|-------------------------------|--------|
 | `fast_mode` | `fast` | Step 10 skips sub-skill routing and the Step 11 QA sub-flow; implements inline |
-| `steps_mode` | `steps` | Mandatory per-step checkpoint bookkeeping (see Steps Mode below) |
 | `workflow_choice` | `brainstorm` or `feature-dev` | Non-bug routing at Step 10; if neither, Step 10 asks the operator |
 
-`fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely). `steps_mode` is orthogonal to both.
-
-If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints-steps.md`** → "Initialization" (or resume from it) now, before Step 0.
+`fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely).
 
 ## Fast Mode
 
@@ -47,15 +43,9 @@ Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replac
 
 **What is skipped:** only the sub-skill routing in Step 10 and the entire Step 11 QA sub-flow. Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
 
-## Steps Mode
-
-Set when `steps_mode` flag is active (see Argument Parsing above).
-
-Does not change the flow. Adds mandatory per-step checkpoint bookkeeping so work can be paused and resumed at any point. See **`references/checkpoints-steps.md`** for the update rules, skipped state, template, and lifecycle end; **`references/checkpoints.md`** for the shared pause and resume flows.
-
-Orthogonal to `fast_mode` and `workflow_choice` — combines with either.
-
 ## The Flow
+
+**Before Step 0:** Initialize (or resume) the checkpoint per **`references/checkpoints.md`** → "Initialization". Every run writes per-step progress to `.claude/checkpoints/<task-gid>.md` so work can be resumed after any interruption.
 
 ### Step 0: Check External Skill Dependencies
 
@@ -96,15 +86,7 @@ Before creating a branch, check if work already exists for this task ID. See **`
 
 If a branch or PR exists, offer to resume or start fresh. If resuming, check out the existing branch and skip creation.
 
-### Step 6a: Check for Checkpoint (Resume)
-
-**Skip this step in steps mode** — the Initialization section of `references/checkpoints-steps.md` already handled checkpoint detection before Step 0.
-
-After fetching remote refs, check for `.claude/checkpoints/<task-gid>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. The checkpoint format is detected from its contents (presence of a `## Steps` table = steps mode, narrative body = default mode); resume honors the file's original mode regardless of the current `$ARGUMENTS`. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
-
-On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint. The same Step 12 ship-it handoff applies after the workflow completes.
-
-### Step 6b: Ask About Worktree (BLOCKING)
+### Step 6a: Ask About Worktree (BLOCKING)
 
 Before creating the branch, ask the user whether to use a git worktree. This is a **blocking** question — wait for an explicit answer before proceeding.
 
@@ -116,7 +98,7 @@ Present the choice:
 
 If the user chooses worktree, use `EnterWorktree` to create an isolated copy. The branch will be created inside the worktree in Step 7.
 
-### Step 6c: Confirm Base Branch (BLOCKING)
+### Step 6b: Confirm Base Branch (BLOCKING)
 
 Ask the user which branch to base the new branch on. This is a **blocking** question — wait for an explicit answer before proceeding.
 
@@ -130,7 +112,7 @@ Default to `main` only after the user confirms. If the user specifies a differen
 
 ### Step 7: Create Feature Branch
 
-Create a branch using the task ID and a slug from the task name. Use the **base branch confirmed in Step 6c** (not assumed `main`). Inform (do not ask) when creating. See **`references/git-workflow.md`** for commands and naming convention.
+Create a branch using the task ID and a slug from the task name. Use the **base branch confirmed in Step 6b** (not assumed `main`). Inform (do not ask) when creating. See **`references/git-workflow.md`** for commands and naming convention.
 
 ### Step 8: Create Draft PR
 
@@ -196,7 +178,7 @@ The branch is already created and checked out — the downstream skill works on 
 
 Run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally). For non-bug tasks this runs after the development workflow returns; for bug tasks it runs immediately after routing.
 
-**In fast mode** the sub-flow is skipped entirely. In steps-mode checkpoints, mark every QA row `[~]` / `skipped` / `fast mode`.
+**In fast mode** the sub-flow is skipped entirely. Mark every QA row in the checkpoint as `[~]` / `skipped` / `fast mode`.
 
 ### Step 12: Ship It
 
@@ -216,11 +198,7 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
 
-**Steps mode only:** after `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints-steps.md`** → "Lifecycle End".
-
-## Pause Flow
-
-Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any phase of work. Commits WIP, drafts a blocking question for user approval, posts to Asana, saves/updates a checkpoint, and pushes. See **`references/checkpoints.md`** for the full pause flow and trigger phrases; the mode-specific file format lives in `references/checkpoints-steps.md` or `references/checkpoints-pause.md`.
+After `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** → "Lifecycle End".
 
 ## Important Notes
 
@@ -234,7 +212,5 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/validation-rules.md`** — Sprint-readiness checks, failure display, skip rules
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
-- **`references/checkpoints.md`** — Shared entry: file location, frontmatter, mode detection, pause flow, resume flow, edge cases
-- **`references/checkpoints-steps.md`** — Steps-mode specifics: steps table, initialization, per-step updates, lifecycle end
-- **`references/checkpoints-pause.md`** — Default-mode specifics: narrative template, pause-only file creation
+- **`references/checkpoints.md`** — Checkpoint file format, initialization, per-step updates, resume flow, lifecycle end, edge cases
 - **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and the QA sub-flow (plugin-level shared reference with pre-ship-check)

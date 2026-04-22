@@ -67,7 +67,7 @@ Skills NOT bundled — must be installed separately:
 | `feature-dev:feature-dev` | `feature-dev@claude-plugins-official` | start-task (Step 10, non-bug) |
 | `superpowers:systematic-debugging` | `superpowers@claude-plugins-official` | fix-bug (Step 1) |
 | `superpowers:brainstorming` | `superpowers@claude-plugins-official` | start-task (Step 10, brainstorm workflow) |
-| `superpowers:using-git-worktrees` | `superpowers@claude-plugins-official` | start-task (Step 6b, optional) |
+| `superpowers:using-git-worktrees` | `superpowers@claude-plugins-official` | start-task (Step 6a, optional) |
 
 ## Development Workflow
 

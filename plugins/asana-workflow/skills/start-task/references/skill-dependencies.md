@@ -27,7 +27,7 @@
 
 ### `superpowers:using-git-worktrees` _(optional)_
 - **Plugin:** `superpowers@claude-plugins-official` _(same as above)_
-- **Used for:** Worktree setup if user chooses worktree mode in Step 6b
+- **Used for:** Worktree setup if user chooses worktree mode in Step 6a
 - **Install:** Included with `superpowers` above
 
 ## How to Check If Dependencies Are Installed

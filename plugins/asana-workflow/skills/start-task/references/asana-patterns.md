@@ -72,30 +72,6 @@ Post a comment on the task (only if one with the flag emoji doesn't already exis
 
 Include the draft PR URL so teammates can find the GitHub PR from Asana immediately. The counterpart is 🚀 posted by `ship-it` when the work ships.
 
-## Posting a Blocking Question (Pause)
-
-When pausing a task, draft a blocking question and present it for user approval before posting. Never post without explicit approval.
-
-Format the comment to @mention the person who should answer:
-
-> @Maria — Need clarification: should the CSV export include filtered-out rows as a separate sheet, or exclude them entirely? This blocks the export logic implementation.
-
-## Checking for Answers (Resume)
-
-On resume, fetch task stories posted after the checkpoint's `paused_at` timestamp:
-
-```
-GET /tasks/<task-gid>/stories?opt_fields=text,created_by.name,type,created_at
-```
-
-Filter for `type: "comment"` and `created_at` after `paused_at`. Present any new comments as potential answers to the blocking question.
-
-## Posting a Resume Comment
-
-When resuming work on a paused task, post a brief comment for team visibility:
-
-> Resuming work on branch `<task-id>/<slug>`
-
 ## All Asana API Calls
 
 Route all Asana API operations through the `asana-api` skill — do not use raw curl directly.
