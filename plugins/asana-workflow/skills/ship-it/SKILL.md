@@ -75,7 +75,7 @@ If pre-ship-check reported a QA advisory (no QA verification found for a non-bug
 Wait for the operator's answer before continuing.
 
 If the operator chooses **Yes**:
-1. Resolve the QA skill using the shared logic in **`plugins/asana-workflow/skills/start-task/references/qa-routing.md`** ("Resolving the QA Skill" section) — check `CLAUDE.md` for `qa-skill:`, then infer from project files, then ask if ambiguous.
+1. Resolve the QA skill using the shared logic in **`plugins/asana-workflow/references/qa-routing.md`** ("Resolving the QA Skill" section) — check `CLAUDE.md` for `qa-skill:`, then infer from project files, then ask if ambiguous.
 2. Invoke the QA skill with a summary of what was built/changed (from git diff/log).
 3. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 

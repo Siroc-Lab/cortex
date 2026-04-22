@@ -23,19 +23,19 @@ Take an Asana task, validate it's ready for development, understand the work, se
 ## Prerequisites
 
 - `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
-- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa` or `mobile-qa` (resolved at Step 10a), and optionally `superpowers:brainstorming` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa` or `mobile-qa` (resolved per `plugins/asana-workflow/references/qa-routing.md`), and optionally `superpowers:brainstorming` skills
 
 ## Fast Mode
 
-**Trigger:** `$ARGUMENTS` contains `fast`.
+Set when `fast_mode` flag is active (see Argument Parsing below).
 
 Fast mode runs the full lifecycle (Steps 0–9 and Step 11) unchanged but replaces Step 10 skill routing with direct inline implementation. No `feature-dev`, `brainstorming`, `fix-bug`, or QA skill is invoked — implement the solution immediately using built-in tools (Read, Edit, Bash, Grep, etc.) and reason about it directly in this conversation.
 
-**What is skipped:** only the sub-skill routing in Step 10 (and the Bug sub-steps 10a–10d). Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
+**What is skipped:** only the sub-skill routing in Step 10 and the entire QA sub-flow. Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
 
 ## Steps Mode
 
-**Trigger:** `$ARGUMENTS` contains `steps`.
+Set when `steps_mode` flag is active (see Argument Parsing below).
 
 Steps mode does not change the flow — every step below runs as normal. It only adds mandatory checkpoint bookkeeping so work can be paused and resumed at any point without losing progress.
 
@@ -50,11 +50,23 @@ If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. 
 
 Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints.md`** for the file format, the full steps table, comment conventions, initialization, and resume rules.
 
-Steps mode is orthogonal to `fast`, `brainstorm`, and `feature-dev` — it can be combined with any of them.
+Steps mode is orthogonal to `fast_mode` and `workflow_choice` — it can be combined with any of them.
 
 ## The Flow
 
-**Before Step 0:** Parse `$ARGUMENTS`. If it contains `fast`, note it — Step 10 will skip skill routing and implement inline. If it contains `steps`, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) before proceeding, and update the checkpoint around every step per the Steps Mode rule above.
+### Argument Parsing (Before Step 0)
+
+Parse `$ARGUMENTS` once and establish these flags for the rest of the flow. Each step refers to them by name instead of re-parsing.
+
+| Flag | Set when `$ARGUMENTS` contains | Effect |
+|------|-------------------------------|--------|
+| `fast_mode` | `fast` | Step 10 skips sub-skill routing and QA sub-flow; implements inline |
+| `steps_mode` | `steps` | Mandatory per-step checkpoint bookkeeping (see Steps Mode section above) |
+| `workflow_choice` | `brainstorm` or `feature-dev` | Non-bug routing at Step 10; if neither, Step 10 asks the operator |
+
+`fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely). `steps_mode` is orthogonal to both.
+
+If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) now, before Step 0.
 
 ### Step 0: Check External Skill Dependencies
 
@@ -172,21 +184,21 @@ Post a start comment on the task with the branch name and draft PR URL. Deduplic
 
 Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
 
-**If `$ARGUMENTS` contains `fast`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip Steps 10a–10d entirely and proceed to Step 11 when done.
+**If `fast_mode`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip the entire QA sub-flow and proceed to Step 11 when done.
 
 **Otherwise:**
 
-- **"Bug"** — Follow the verify → fix → verify loop (Steps 10a–10c below).
+- **"Bug"** — Follow the QA sub-flow: verify → fix → verify loop.
 - **Anything else** (Feature Request, Tech Debt, etc.):
-  - If `$ARGUMENTS` contains `brainstorm` — invoke `superpowers:brainstorming` with the full context.
-  - If `$ARGUMENTS` contains `feature-dev` — invoke `feature-dev:feature-dev` with the full context.
-  - If no workflow argument was provided — ask (blocking):
+  - If `workflow_choice` is `brainstorm` — invoke `superpowers:brainstorming` with the full context.
+  - If `workflow_choice` is `feature-dev` — invoke `feature-dev:feature-dev` with the full context.
+  - If `workflow_choice` is unset — ask (blocking):
     > "How do you want to approach this?
     > 1. Brainstorm the design first (`superpowers:brainstorming`)
     > 2. Go straight to implementation (`feature-dev:feature-dev`)"
     Wait for explicit answer before routing. No default assumed.
   - **Handoff instruction:** When passing context to `feature-dev` or `brainstorming`, include:
-    > "When this workflow is complete, return to `start-task` Step 10e. Do not end the session — there are more steps."
+    > "When this workflow is complete, return to `start-task` for the non-bug QA gate and the ship-it handoff. Do not end the session — there are more steps."
 - **Category missing** — Prompt: "Is this a bug fix or a feature?" then apply the routing above.
 
 The branch is already created and checked out — the downstream skill works on it directly.
@@ -198,11 +210,11 @@ The branch is already created and checked out — the downstream skill works on 
 - **Fast mode** — skip 10a–10e entirely (mark `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
 - **QA skill resolved to `none`** — for bugs, skip 10b and 10d but still run 10c with ticket-only context. For non-bugs, skip 10e.
 
-See **`references/qa-routing.md`** for the full QA skill resolution logic, each sub-step's invocation details, outcome handling, and the shared reference used by `ship-it`'s Step 2.
+See **`plugins/asana-workflow/references/qa-routing.md`** for the full QA skill resolution logic, each sub-step's invocation details, outcome handling, and the shared reference used by `ship-it`'s Step 2.
 
 ### Step 11: Ship It
 
-**This step runs after QA verification (Step 10d for bugs, Step 10e for non-bugs) or when the operator skips QA.** Do not wait for the user to ask.
+**This step runs after the bug QA verify loop (for bugs) or the non-bug QA gate (for non-bugs) completes — or when the operator skips QA.** Do not wait for the user to ask.
 
 Invoke `ship-it`. The following context is already in this session — pass it through, do not re-ask:
 
@@ -237,4 +249,4 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
 - **`references/checkpoints.md`** — Checkpoint file format, pause flow, resume flow, edge cases
-- **`references/qa-routing.md`** — QA skill resolution and Steps 10a–10e sub-flow (shared with ship-it)
+- **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and Steps 10a–10e sub-flow (plugin-level shared reference with ship-it)

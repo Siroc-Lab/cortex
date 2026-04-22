@@ -1,6 +1,6 @@
 # QA Routing Reference
 
-Shared reference for resolving which QA skill to invoke and for the start-task QA sub-flow (Steps 10a–10e). Used by both `start-task` (at Step 10) and `ship-it` (at Step 2 if a QA advisory fires).
+Plugin-level shared reference for resolving which QA skill to invoke and for the start-task QA sub-flow (Steps 10a–10e). Used by both `start-task` (at Step 10) and `ship-it` (at Step 2 if a QA advisory fires). Lives at `plugins/asana-workflow/references/qa-routing.md` alongside other shared references (e.g., `board-resolution.md`).
 
 ---
 
