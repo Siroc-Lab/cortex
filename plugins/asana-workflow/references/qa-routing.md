@@ -25,7 +25,7 @@ Check in order:
 
 Reuse the resolved QA skill for all QA invocations in the task.
 
-**If `none`:** for bug tasks, skip `QA: Investigate Bug` and `QA: Verify Fix` (no visual QA to run) but still run `QA: Fix Bug` with ticket-only context. For non-bug tasks, skip the `QA: Non-Bug Gate`.
+**If `none`:** for bug tasks, skip `QA: Investigate Bug` and `QA: Verify Fix` (no visual QA to run) but still run `QA: Fix Bug` with ticket-only context. For non-bug tasks, skip the `QA: Verify Non-Bug`.
 
 ---
 
@@ -68,7 +68,7 @@ After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with
 - **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to ship-it.
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to `QA: Fix Bug` for another debugging pass.
 
-### QA: Non-Bug Gate
+### QA: Verify Non-Bug
 
 **Non-bug tasks only.** Bug tasks already have QA via `QA: Investigate Bug` + `QA: Verify Fix`.
 

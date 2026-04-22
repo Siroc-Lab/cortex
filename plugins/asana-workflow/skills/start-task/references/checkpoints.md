@@ -81,7 +81,7 @@ last_updated: "<iso8601>"
 | QA: Investigate Bug | [ ] | | 0 | — | [ ] |
 | QA: Fix Bug | [ ] | | 0 | — | [x] |
 | QA: Verify Fix | [ ] | | 0 | — | [ ] |
-| QA: Non-Bug Gate | [ ] | | 0 | — | [ ] |
+| QA: Verify Non-Bug | [ ] | | 0 | — | [ ] |
 | 11. Ship It | [ ] | | 0 | — | [x] |
 
 ## Notes
@@ -203,7 +203,7 @@ A `[~]` row is terminal. Resume skips over it the same as `[x]`.
 | QA: Investigate Bug | `Confirmed`, `Cannot reproduce`, or skipped reason |
 | QA: Fix Bug | `Fix ready`, `Failed: <reason>`, or skipped reason |
 | QA: Verify Fix | `Pass`, `Fail`, or skipped reason |
-| QA: Non-Bug Gate | `Passed`, `Failed: <reason>`, or skipped reason |
+| QA: Verify Non-Bug | `Passed`, `Failed: <reason>`, or skipped reason |
 | 11. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates
