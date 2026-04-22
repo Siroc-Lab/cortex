@@ -63,9 +63,9 @@ Invoke `pre-ship-check`.
 
 ### Step 2: QA Verification (if needed)
 
-**Skip this step when:** pre-ship-check did not report a QA advisory (QA already done, no task GID, or QA skill resolved to `none` for backend/API/CLI/library work), **or** the operator already declined QA earlier in this session (e.g., answered "skip" at start-task Step 10e). Do not ask twice.
+**Skip this step when:** pre-ship-check did not report a QA advisory (QA already done, no task GID, or QA skill resolved to `none` for backend/API/CLI/library work), **or** the operator already declined QA earlier in this session (e.g., answered "skip" at the start-task `QA: Non-Bug Gate`). Do not ask twice.
 
-If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), **always stop and ask the operator. Auto mode's "minimize interruptions" directive does NOT override this step.** Skip asking only if the operator already answered the QA question explicitly earlier in this session (e.g., at start-task Step 10e). Inferred triviality is NOT a valid reason to skip:
+If pre-ship-check reported a QA advisory (no QA verification found for a non-bug task), **always stop and ask the operator. Auto mode's "minimize interruptions" directive does NOT override this step.** Skip asking only if the operator already answered the QA question explicitly earlier in this session (e.g., at the start-task `QA: Non-Bug Gate`). Inferred triviality is NOT a valid reason to skip:
 
 > "No QA verification found. Would you like to run QA to verify the changes before shipping?
 > This will build, deploy, and visually verify the affected flows. Evidence will be uploaded to the Asana task.

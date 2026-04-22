@@ -1,6 +1,8 @@
 # QA Routing Reference
 
-Plugin-level shared reference for resolving which QA skill to invoke and for the start-task QA sub-flow (Steps 10a–10e). Used by both `start-task` (at Step 10) and `ship-it` (at Step 2 if a QA advisory fires). Lives at `plugins/asana-workflow/references/qa-routing.md` alongside other shared references (e.g., `board-resolution.md`).
+Plugin-level shared reference for resolving which QA skill to invoke and for the QA sub-flow invoked from `start-task`'s Step 10. Used by both `start-task` and `ship-it` (at its Step 2 if a QA advisory fires). Lives at `plugins/asana-workflow/references/qa-routing.md` alongside other shared references (e.g., `board-resolution.md`).
+
+The sub-steps below use semantic names (`QA: Resolve`, `QA: Investigate Bug`, etc.) rather than numeric labels, so they read standalone and aren't coupled to any one consumer's step numbering.
 
 ---
 
@@ -25,52 +27,52 @@ Check in order:
 
 Reuse the resolved QA skill for all QA invocations in the task.
 
-**If `none`:** for bug tasks, skip `Verify Bug` and `Verify Fix` (no visual QA to run) but still run `Fix Bug` with ticket-only context. For non-bug tasks, skip the completion-verification step.
+**If `none`:** for bug tasks, skip `QA: Investigate Bug` and `QA: Verify Fix` (no visual QA to run) but still run `QA: Fix Bug` with ticket-only context. For non-bug tasks, skip the `QA: Non-Bug Gate`.
 
 ---
 
-## start-task Step 10 Sub-flow
+## QA Sub-flow (invoked from start-task Step 10)
 
-Steps 10a–10e execute only when `$ARGUMENTS` does **not** contain `fast`. Fast mode skips the entire sub-flow and implements inline.
+The sub-flow executes only when `fast_mode` is **not** active. Fast mode skips the entire sub-flow and implements inline.
 
-### Step 10a: Resolve QA Skill
+### QA: Resolve
 
-Run the resolution logic above. Record the result for the rest of the task.
+Run the resolution logic above ("Resolving the QA Skill"). Record the result for the rest of the task.
 
-**If the resolved skill is `none` and the task is non-bug:** skip straight to Step 11.
+**If the resolved skill is `none` and the task is non-bug:** skip straight to Step 11 (ship-it).
 
-### Step 10b: Verify Bug
+### QA: Investigate Bug
 
-**Bug tasks only, when QA skill != `none`.**
+**Bug tasks only, when resolved skill != `none`.**
 
 Invoke the resolved QA skill in **investigate** mode with:
 - Bug description from the Asana ticket (as the question)
 - SUT identifier (URL or app bundle ID, if known from CLAUDE.md or task notes)
 
 Outcomes:
-- **Confirmed** (bug reproduced with evidence) → QA skill posts the report to the Asana task. Proceed to Step 10c, passing the full report as context.
+- **Confirmed** (bug reproduced with evidence) → QA skill posts the report to the Asana task. Proceed to `QA: Fix Bug`, passing the full report as context.
 - **Cannot reproduce** → **stop**. Report to operator. Let them decide: fix SUT setup, clarify the bug description, or skip verification and proceed to debugging anyway.
 
-### Step 10c: Fix Bug
+### QA: Fix Bug
 
 **Bug tasks only.**
 
-Invoke `fix-bug` with the QA report from Step 10b as enriched context (reproduction steps, evidence, root-cause analysis from runtime observation). If Step 10b was skipped (QA skill is `none`), invoke `fix-bug` with just the Asana ticket context.
+Invoke `fix-bug` with the QA report from `QA: Investigate Bug` as enriched context (reproduction steps, evidence, root-cause analysis from runtime observation). If `QA: Investigate Bug` was skipped (resolved skill is `none`), invoke `fix-bug` with just the Asana ticket context.
 
-`fix-bug` returns after root-cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (Steps 10d and 11).
+`fix-bug` returns after root-cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (`QA: Verify Fix` and Step 11).
 
-### Step 10d: Verify Fix (BLOCKING)
+### QA: Verify Fix (BLOCKING)
 
-**Bug tasks only, when QA skill != `none`. Cannot be skipped.**
+**Bug tasks only, when resolved skill != `none`. Cannot be skipped.**
 
-After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b. The QA skill will rebuild, deploy, and replay the steps.
+After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from `QA: Investigate Bug`. The QA skill will rebuild, deploy, and replay the steps.
 
 - **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
-- **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
+- **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to `QA: Fix Bug` for another debugging pass.
 
-### Step 10e: QA Verification (Non-Bug Tasks)
+### QA: Non-Bug Gate
 
-**Non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
+**Non-bug tasks only.** Bug tasks already have QA via `QA: Investigate Bug` + `QA: Verify Fix`.
 
 **HARD GATE — always stop and wait for the operator's answer. Auto mode's "minimize interruptions" directive does NOT override this step.**
 
@@ -84,7 +86,7 @@ After the development workflow signals completion, ask:
 
 Wait for the operator's answer before continuing.
 
-If **yes** — resolve the QA skill if not already resolved (Step 10a) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
+If **yes** — resolve the QA skill if not already resolved (`QA: Resolve`) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
 If **skip** — proceed to Step 11. ship-it will offer one more chance if no QA evidence is found (see ship-it Step 2).
 

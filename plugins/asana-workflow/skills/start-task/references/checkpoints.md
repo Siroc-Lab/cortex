@@ -77,17 +77,17 @@ last_updated: "<iso8601>"
 | 9a. Move to In Progress | [ ] | | 0 | — | [x] |
 | 9b. Post Start Comment | [ ] | | 0 | — | [x] |
 | 10. Route to Workflow | [ ] | | 0 | — | [ ] |
-| 10a. Resolve QA Skill | [ ] | | 0 | — | [ ] |
-| 10b. Verify Bug (investigate) | [ ] | | 0 | — | [ ] |
-| 10c. Fix Bug | [ ] | | 0 | — | [x] |
-| 10d. Verify Fix | [ ] | | 0 | — | [ ] |
-| 10e. QA Verification (non-bug) | [ ] | | 0 | — | [ ] |
+| QA: Resolve | [ ] | | 0 | — | [ ] |
+| QA: Investigate Bug | [ ] | | 0 | — | [ ] |
+| QA: Fix Bug | [ ] | | 0 | — | [x] |
+| QA: Verify Fix | [ ] | | 0 | — | [ ] |
+| QA: Non-Bug Gate | [ ] | | 0 | — | [ ] |
 | 11. Ship It | [ ] | | 0 | — | [x] |
 
 ## Notes
 ```
 
-Rows 10a–10e are only exercised when their preconditions apply (bug vs non-bug, QA skill != `none`). Leave unreached rows as `[ ]`, state `—`.
+The `QA:` rows are only exercised when their preconditions apply (bug vs non-bug, resolved QA skill != `none`, not in fast mode). Leave unreached rows as `[ ]`, state `—` if the skill doesn't get a chance to set them — but prefer marking them `[~]` / `skipped` with a reason when the non-applicability is known at the time the row would run (see Section 3).
 
 ### Template (Default Mode — Pause Only)
 
@@ -199,11 +199,11 @@ A `[~]` row is terminal. Resume skips over it the same as `[x]`.
 | 9a. Move to In Progress | `Moved`, `Already in progress`, or `Failed: <reason>` |
 | 9b. Post Start Comment | `Posted` or `Skipped (duplicate)` |
 | 10. Route to Workflow | `fix-bug`, `brainstorm`, `feature-dev`, or `fast` |
-| 10a. Resolve QA Skill | `web-qa`, `mobile-qa`, `none`, or skipped reason |
-| 10b. Verify Bug (investigate) | `Confirmed`, `Cannot reproduce`, or skipped reason |
-| 10c. Fix Bug | `Fix ready`, `Failed: <reason>`, or skipped reason |
-| 10d. Verify Fix | `Pass`, `Fail`, or skipped reason |
-| 10e. QA Verification (non-bug) | `Passed`, `Failed: <reason>`, or skipped reason |
+| QA: Resolve | `web-qa`, `mobile-qa`, `none`, or skipped reason |
+| QA: Investigate Bug | `Confirmed`, `Cannot reproduce`, or skipped reason |
+| QA: Fix Bug | `Fix ready`, `Failed: <reason>`, or skipped reason |
+| QA: Verify Fix | `Pass`, `Fail`, or skipped reason |
+| QA: Non-Bug Gate | `Passed`, `Failed: <reason>`, or skipped reason |
 | 11. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates

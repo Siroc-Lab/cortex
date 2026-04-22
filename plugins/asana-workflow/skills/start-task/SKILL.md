@@ -203,14 +203,14 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
-### Steps 10a–10e: QA Sub-flow
+### QA Sub-flow
 
-- **Bug tasks** — run the verify → fix → verify loop: resolve QA skill (10a), invoke it in investigate mode to confirm the bug (10b), invoke `fix-bug` with the investigation report as context (10c), invoke the QA skill in verify mode to confirm the fix (10d). Loop 10c/10d on failure.
-- **Non-bug tasks** — after the development workflow completes, ask the operator (hard gate, cannot be auto-answered) whether to run QA verification (10e). If yes, invoke the QA skill; if skip, proceed.
-- **Fast mode** — skip 10a–10e entirely (mark `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
-- **QA skill resolved to `none`** — for bugs, skip 10b and 10d but still run 10c with ticket-only context. For non-bugs, skip 10e.
+- **Bug tasks** — run `QA: Resolve` → `QA: Investigate Bug` → `QA: Fix Bug` → `QA: Verify Fix`. Loop `QA: Fix Bug` / `QA: Verify Fix` on failure.
+- **Non-bug tasks** — run `QA: Resolve`, then after the development workflow completes run `QA: Non-Bug Gate` (hard gate, cannot be auto-answered). If yes, invoke the QA skill; if skip, proceed.
+- **Fast mode** — skip the entire sub-flow (mark every QA row `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
+- **Resolved skill = `none`** — for bugs, skip `QA: Investigate Bug` and `QA: Verify Fix` but still run `QA: Fix Bug` with ticket-only context. For non-bugs, skip `QA: Non-Bug Gate`.
 
-See **`plugins/asana-workflow/references/qa-routing.md`** for the full QA skill resolution logic, each sub-step's invocation details, outcome handling, and the shared reference used by `ship-it`'s Step 2.
+See **`plugins/asana-workflow/references/qa-routing.md`** for the full resolution logic, each sub-step's invocation details, and outcome handling. Same reference is used by `ship-it` Step 2.
 
 ### Step 11: Ship It
 
@@ -249,4 +249,4 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
 - **`references/checkpoints.md`** — Checkpoint file format, pause flow, resume flow, edge cases
-- **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and Steps 10a–10e sub-flow (plugin-level shared reference with ship-it)
+- **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and the QA sub-flow (plugin-level shared reference with ship-it)
