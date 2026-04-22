@@ -25,9 +25,23 @@ Take an Asana task, validate it's ready for development, understand the work, se
 - `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
 - Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (external — see `references/skill-dependencies.md`).
 
+## Argument Parsing
+
+Parse `$ARGUMENTS` once and establish these flags. The rest of the skill refers to them by name instead of re-parsing.
+
+| Flag | Set when `$ARGUMENTS` contains | Effect |
+|------|-------------------------------|--------|
+| `fast_mode` | `fast` | Step 10 skips sub-skill routing and the Step 11 QA sub-flow; implements inline |
+| `steps_mode` | `steps` | Mandatory per-step checkpoint bookkeeping (see Steps Mode below) |
+| `workflow_choice` | `brainstorm` or `feature-dev` | Non-bug routing at Step 10; if neither, Step 10 asks the operator |
+
+`fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely). `steps_mode` is orthogonal to both.
+
+If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) now, before Step 0.
+
 ## Fast Mode
 
-Set when `fast_mode` flag is active (see Argument Parsing below).
+Set when `fast_mode` flag is active (see Argument Parsing above).
 
 Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replaces Step 10 skill routing with direct inline implementation, and skips Step 11 (QA sub-flow) entirely. No `feature-dev`, `brainstorming`, `fix-bug`, or QA skill is invoked — implement the solution immediately using built-in tools (Read, Edit, Bash, Grep, etc.) and reason about it directly in this conversation.
 
@@ -35,7 +49,7 @@ Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replac
 
 ## Steps Mode
 
-Set when `steps_mode` flag is active (see Argument Parsing below).
+Set when `steps_mode` flag is active (see Argument Parsing above).
 
 Steps mode does not change the flow — every step below runs as normal. It only adds mandatory checkpoint bookkeeping so work can be paused and resumed at any point without losing progress.
 
@@ -53,20 +67,6 @@ Before anything else, initialize the checkpoint file at `.claude/checkpoints/<ta
 Steps mode is orthogonal to `fast_mode` and `workflow_choice` — it can be combined with any of them.
 
 ## The Flow
-
-### Argument Parsing (Before Step 0)
-
-Parse `$ARGUMENTS` once and establish these flags for the rest of the flow. Each step refers to them by name instead of re-parsing.
-
-| Flag | Set when `$ARGUMENTS` contains | Effect |
-|------|-------------------------------|--------|
-| `fast_mode` | `fast` | Step 10 skips sub-skill routing and QA sub-flow; implements inline |
-| `steps_mode` | `steps` | Mandatory per-step checkpoint bookkeeping (see Steps Mode section above) |
-| `workflow_choice` | `brainstorm` or `feature-dev` | Non-bug routing at Step 10; if neither, Step 10 asks the operator |
-
-`fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely). `steps_mode` is orthogonal to both.
-
-If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) now, before Step 0.
 
 ### Step 0: Check External Skill Dependencies
 
