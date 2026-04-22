@@ -210,7 +210,7 @@ The branch is already created and checked out — the downstream skill works on 
 - **Fast mode** — skip the entire sub-flow (mark every QA row `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
 - **Resolved skill = `none`** — for bugs, skip `QA: Investigate Bug` and `QA: Verify Fix` but still run `QA: Fix Bug` with ticket-only context. For non-bugs, skip `QA: Verify Non-Bug`.
 
-See **`plugins/asana-workflow/references/qa-routing.md`** for the full resolution logic, each sub-step's invocation details, and outcome handling. Same reference is used by `ship-it` Step 2.
+See **`plugins/asana-workflow/references/qa-routing.md`** for the full resolution logic, each sub-step's invocation details, and outcome handling.
 
 ### Step 11: Ship It
 
