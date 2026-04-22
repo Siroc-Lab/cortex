@@ -133,7 +133,7 @@ When a step is **blocked** (cannot complete — waiting on input, external depen
 - Set `State` → `blocked`
 - Set `Comment` → what is blocking
 - Update `last_updated` to now
-- Halt execution. The operator can investigate and resume later.
+- Proceed to **Pause Flow** below.
 
 When a step does **not apply** in this run (wrong category, `qa-skill=none`, fast mode, operator opted out):
 - Set `Completed` → `[~]`
@@ -176,21 +176,81 @@ A `[~]` row is terminal. Resume skips over it the same as `[x]`.
 
 ---
 
+## Pause Flow
+
+Triggered either by an internal `blocked` state (from Step Updates above) or by the operator explicitly asking to pause.
+
+### Trigger Phrases
+
+- "park this", "I'm blocked", "pause task"
+- "need to wait for an answer", "put this on hold"
+- "waiting on [someone]", "blocked by [someone]"
+- "save my progress", "pick this up later", "come back to this later"
+
+### Steps
+
+**1. Verify branch**
+Confirm the current branch matches `branch` in checkpoint frontmatter. If on a different branch, warn before proceeding. If a merge is in progress, warn and do not commit.
+
+**2. Commit WIP**
+Stage all changes and commit with:
+
+```
+WIP: <task-id> — blocked on [short reason]
+```
+
+Example: `WIP: MT251-47 — blocked on timezone decision`
+
+**3. Draft blocking question**
+Formulate from conversation context. Present for user approval. The user MUST approve the exact wording before it is posted. Never post to Asana without explicit approval.
+
+Example draft:
+
+> "Hey @Sarah Chen — quick question before I can finish the CSV export: should timestamps use the user's local timezone or UTC? This affects how `formatTimestamp()` is implemented."
+
+**4. Post to Asana**
+After approval, post via the `asana-api` skill. Include the @mention of the blocking person. See `asana-patterns.md` → "Posting a Blocking Question (Pause)" for the format.
+
+**5. Update checkpoint**
+Set the current step's `State` → `blocked` (if not already), `Comment` → who is blocking. Append a `## Notes` entry with the blocking question and who to follow up with.
+
+**6. Push branch**
+Push the WIP commit to remote.
+
+**7. Confirm**
+Report: commit hash, Asana comment link, checkpoint path. Instruct the operator to run `/start-task` with the same URL to resume.
+
+### Asana State
+
+Leave the task status as "In Progress". Do not move the task to a different section.
+
+---
+
 ## Resume Flow
 
 Triggered automatically during Initialization when a checkpoint file is found. Also triggered by explicit operator intent ("resume task", "pick up where I left off", "continue [task-id]", "unpause").
 
 ### Steps
 
-**1. Load checkpoint** — find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` and `[~]` rows entirely. If the target row has `State = blocked`, note what was blocking (from its `Comment`) and surface it to the operator before proceeding.
+**1. Load checkpoint** — find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` and `[~]` rows entirely.
 
 **2. Present current state** — render the Steps table so the operator sees what's done, what's remaining, and any blocked row.
 
-**3. Verify branch exists** — check the branch exists locally or on remote. If deleted: offer to recreate from `base_branch` or start fresh. Starting fresh deletes the checkpoint.
+**3. Check for blocked state** — if the resuming row has `State = blocked`, fetch Asana stories posted after `last_updated` (see `asana-patterns.md` → "Checking for Answers on Resume"). Show new comments as potential answers to the blocking question. If no new comments: offer to resume anyway or keep waiting.
 
-**4. Check task status** — if the task has been completed, reassigned, or moved to a different section since `last_updated`, warn before proceeding.
+**4. Verify branch exists** — check the branch exists locally or on remote. If deleted: offer to recreate from `base_branch` or start fresh. Starting fresh deletes the checkpoint.
 
-**5. Resume work** — check out the branch and continue from the first incomplete row.
+**5. Check task status** — if the task has been completed, reassigned, or moved to a different section since `last_updated`, warn before proceeding.
+
+**6. Post resume comment** (only if the resuming row was `blocked`):
+
+```
+Resuming work on branch `<branch>`
+```
+
+See `asana-patterns.md` → "Posting a Resume Comment".
+
+**7. Resume work** — check out the branch and continue from the first incomplete row.
 
 ---
 

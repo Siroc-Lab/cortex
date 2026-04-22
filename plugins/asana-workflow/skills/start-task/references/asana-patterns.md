@@ -72,6 +72,30 @@ Post a comment on the task (only if one with the flag emoji doesn't already exis
 
 Include the draft PR URL so teammates can find the GitHub PR from Asana immediately. The counterpart is 🚀 posted by `ship-it` when the work ships.
 
+## Posting a Blocking Question (Pause)
+
+When pausing a task (see `checkpoints.md` → "Pause Flow"), draft a blocking question and present it for user approval before posting. Never post without explicit approval.
+
+Format the comment to @mention the person who should answer:
+
+> @Maria — Need clarification: should the CSV export include filtered-out rows as a separate sheet, or exclude them entirely? This blocks the export logic implementation.
+
+## Checking for Answers on Resume
+
+On resume, if the resuming row has `State = blocked`, fetch task stories posted after the checkpoint's `last_updated` timestamp:
+
+```
+GET /tasks/<task-gid>/stories?opt_fields=text,created_by.name,type,created_at
+```
+
+Filter for `type: "comment"` and `created_at` after `last_updated`. Present any new comments as potential answers to the blocking question.
+
+## Posting a Resume Comment
+
+When resuming work on a previously blocked task, post a brief comment for team visibility:
+
+> Resuming work on branch `<task-id>/<slug>`
+
 ## All Asana API Calls
 
 Route all Asana API operations through the `asana-api` skill — do not use raw curl directly.

@@ -200,6 +200,10 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 
 After `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** → "Lifecycle End".
 
+## Pause Flow
+
+Triggered either by a step going into `State = blocked` during the flow or by the operator saying "park this", "I'm blocked", "pause task", or similar. Commits WIP, drafts a blocking question for user approval, posts to Asana (@mentioning the blocker), updates the checkpoint, and pushes. See **`references/checkpoints.md`** → "Pause Flow" for the full sequence and **`references/asana-patterns.md`** for the Asana comment formats.
+
 ## Important Notes
 
 - This skill orchestrates the full lifecycle: start → develop → ship. It hands off to `ship-it` when development is done.
