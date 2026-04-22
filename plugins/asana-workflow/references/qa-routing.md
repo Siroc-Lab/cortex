@@ -1,8 +1,6 @@
 # QA Routing Reference
 
-Plugin-level shared reference for resolving which QA skill to invoke and for the QA sub-flow invoked from `start-task`'s Step 10. Used by both `start-task` and `ship-it` (at its Step 2 if a QA advisory fires). Lives at `plugins/asana-workflow/references/qa-routing.md` alongside other shared references (e.g., `board-resolution.md`).
-
-The sub-steps below use semantic names (`QA: Resolve`, `QA: Investigate Bug`, etc.) rather than numeric labels, so they read standalone and aren't coupled to any one consumer's step numbering.
+Plugin-level shared reference used by `start-task` (to route QA during a task) and `ship-it` (to offer QA before shipping if none has been recorded). Covers how to resolve which QA skill to invoke and the QA investigate → fix → verify sub-flow.
 
 ---
 
@@ -31,15 +29,15 @@ Reuse the resolved QA skill for all QA invocations in the task.
 
 ---
 
-## QA Sub-flow (invoked from start-task Step 10)
+## QA Sub-flow
 
-The sub-flow executes only when `fast_mode` is **not** active. Fast mode skips the entire sub-flow and implements inline.
+The sub-flow runs after the development workflow completes and before ship-it. It is skipped entirely when `fast_mode` is active — fast mode implements inline without QA.
 
 ### QA: Resolve
 
 Run the resolution logic above ("Resolving the QA Skill"). Record the result for the rest of the task.
 
-**If the resolved skill is `none` and the task is non-bug:** skip straight to Step 11 (ship-it).
+**If the resolved skill is `none` and the task is non-bug:** skip straight to ship-it.
 
 ### QA: Investigate Bug
 
@@ -59,7 +57,7 @@ Outcomes:
 
 Invoke `fix-bug` with the QA report from `QA: Investigate Bug` as enriched context (reproduction steps, evidence, root-cause analysis from runtime observation). If `QA: Investigate Bug` was skipped (resolved skill is `none`), invoke `fix-bug` with just the Asana ticket context.
 
-`fix-bug` returns after root-cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (`QA: Verify Fix` and Step 11).
+`fix-bug` returns after root-cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (`QA: Verify Fix` and the ship-it handoff).
 
 ### QA: Verify Fix (BLOCKING)
 
@@ -67,7 +65,7 @@ Invoke `fix-bug` with the QA report from `QA: Investigate Bug` as enriched conte
 
 After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from `QA: Investigate Bug`. The QA skill will rebuild, deploy, and replay the steps.
 
-- **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
+- **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to ship-it.
 - **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to `QA: Fix Bug` for another debugging pass.
 
 ### QA: Non-Bug Gate
@@ -88,10 +86,10 @@ Wait for the operator's answer before continuing.
 
 If **yes** — resolve the QA skill if not already resolved (`QA: Resolve`) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
-If **skip** — proceed to Step 11. ship-it will offer one more chance if no QA evidence is found (see ship-it Step 2).
+If **skip** — proceed to ship-it. ship-it will offer one more chance if no QA evidence is found (see ship-it's QA advisory step).
 
 ---
 
-## ship-it Step 2 Use (Reference)
+## Use by ship-it
 
-`ship-it` uses the "Resolving the QA Skill" section above at its Step 2 (QA Verification) when pre-ship-check reports a QA advisory. The same logic, the same order — no redefinition.
+`ship-it` uses the "Resolving the QA Skill" section above when pre-ship-check reports a QA advisory (no QA evidence found for a non-bug task). Same logic, same order — no redefinition.
