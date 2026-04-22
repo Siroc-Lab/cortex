@@ -37,7 +37,7 @@ Parse `$ARGUMENTS` once and establish these flags. The rest of the skill refers 
 
 `fast_mode` is mutually exclusive with `workflow_choice` (fast skips routing entirely). `steps_mode` is orthogonal to both.
 
-If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) now, before Step 0.
+If `steps_mode` is set, initialize the checkpoint per **`references/checkpoints-steps.md`** → "Initialization" (or resume from it) now, before Step 0.
 
 ## Fast Mode
 
@@ -62,7 +62,7 @@ Steps mode does not change the flow — every step below runs as normal. It only
 
 If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. If a step's preconditions don't apply in this run (wrong category, `qa-skill=none`, fast mode, operator opted out), mark it as skipped: `Completed` → `[~]`, `State` → `skipped`, `Comment` → the reason. A `[~]` row is terminal — treated like `[x]` on resume. Never leave a step as `in_progress` and advance past it.
 
-Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints.md`** for the file format, the full steps table, comment conventions, initialization, and resume rules.
+Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints-steps.md`** for the file format, steps table, comment conventions, and initialization/update rules; **`references/checkpoints.md`** for the shared pause and resume flows.
 
 Steps mode is orthogonal to `fast_mode` and `workflow_choice` — it can be combined with any of them.
 
@@ -109,7 +109,7 @@ If a branch or PR exists, offer to resume or start fresh. If resuming, check out
 
 ### Step 6a: Check for Checkpoint (Resume)
 
-**Skip this step in steps mode** — Section 2 of `references/checkpoints.md` already handled checkpoint detection before Step 0.
+**Skip this step in steps mode** — the Initialization section of `references/checkpoints-steps.md` already handled checkpoint detection before Step 0.
 
 After fetching remote refs, check for `.claude/checkpoints/<task-gid>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. The checkpoint format is detected from its contents (presence of a `## Steps` table = steps mode, narrative body = default mode); resume honors the file's original mode regardless of the current `$ARGUMENTS`. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
 
@@ -227,11 +227,11 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
 
-**Steps mode only:** after `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** Section 7.
+**Steps mode only:** after `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints-steps.md`** → "Lifecycle End".
 
 ## Pause Flow
 
-Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any phase of work. Commits WIP, drafts a blocking question for user approval, posts to Asana, saves a checkpoint, and pushes. See **`references/checkpoints.md`** for the full pause flow, checkpoint file format, and trigger phrases.
+Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any phase of work. Commits WIP, drafts a blocking question for user approval, posts to Asana, saves/updates a checkpoint, and pushes. See **`references/checkpoints.md`** for the full pause flow and trigger phrases; the mode-specific file format lives in `references/checkpoints-steps.md` or `references/checkpoints-pause.md`.
 
 ## Important Notes
 
@@ -245,5 +245,7 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/validation-rules.md`** — Sprint-readiness checks, failure display, skip rules
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
-- **`references/checkpoints.md`** — Checkpoint file format, pause flow, resume flow, edge cases
+- **`references/checkpoints.md`** — Shared entry: file location, frontmatter, mode detection, pause flow, resume flow, edge cases
+- **`references/checkpoints-steps.md`** — Steps-mode specifics: steps table, initialization, per-step updates, lifecycle end
+- **`references/checkpoints-pause.md`** — Default-mode specifics: narrative template, pause-only file creation
 - **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and the QA sub-flow (plugin-level shared reference with pre-ship-check)
