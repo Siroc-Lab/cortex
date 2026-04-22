@@ -168,6 +168,6 @@ Resuming work on branch `<branch>`
 
 **Validation fails on resume at Step 3** — re-run validation fresh; present updated results.
 
-**Step 9 fails on resume** — non-blocking; report and continue.
+**Step 9a or 9b fails on resume** — non-blocking; report and continue. 9a (move) failures leave the task in its prior section; 9b (post start comment) failures mean no 🏁 comment was posted.
 
 **No answer yet on resume** — if no new Asana comments have been posted since the pause, offer two options: resume anyway and continue without the answer, or keep waiting (exit without resuming).

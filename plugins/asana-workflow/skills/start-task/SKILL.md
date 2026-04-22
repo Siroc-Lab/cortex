@@ -51,20 +51,9 @@ Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replac
 
 Set when `steps_mode` flag is active (see Argument Parsing above).
 
-Steps mode does not change the flow — every step below runs as normal. It only adds mandatory checkpoint bookkeeping so work can be paused and resumed at any point without losing progress.
+Does not change the flow. Adds mandatory per-step checkpoint bookkeeping so work can be paused and resumed at any point. See **`references/checkpoints-steps.md`** for the update rules, skipped state, template, and lifecycle end; **`references/checkpoints.md`** for the shared pause and resume flows.
 
-**The rule:** when steps mode is active, a step is not complete until its row in the checkpoint file is updated. For every step:
-
-1. Mark the row: `State` → `in_progress`, `Attempts` +1, update `last_updated`.
-2. Do the step's work.
-3. Mark the row: `Completed` → `[x]`, `State` → `completed`, fill `Comment` and `Auto`.
-4. Only then: move to the next step.
-
-If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. If a step's preconditions don't apply in this run (wrong category, `qa-skill=none`, fast mode, operator opted out), mark it as skipped: `Completed` → `[~]`, `State` → `skipped`, `Comment` → the reason. A `[~]` row is terminal — treated like `[x]` on resume. Never leave a step as `in_progress` and advance past it.
-
-Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints-steps.md`** for the file format, steps table, comment conventions, and initialization/update rules; **`references/checkpoints.md`** for the shared pause and resume flows.
-
-Steps mode is orthogonal to `fast_mode` and `workflow_choice` — it can be combined with any of them.
+Orthogonal to `fast_mode` and `workflow_choice` — combines with either.
 
 ## The Flow
 

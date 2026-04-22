@@ -29,7 +29,7 @@ Each skill follows: `skills/<name>/SKILL.md` + optional `references/` subdirecto
 start-task
   ├── asana-api          (fetch task, update status)
   ├── git-check          (validate git state)
-  ├── web-qa             (verify bug → verify fix loop, extends generic-qa)
+  ├── web-qa / mobile-qa (bug QA loop via QA sub-flow; resolution per plugin references/qa-routing.md)
   ├── [external] feature-dev:feature-dev    (route non-bug tasks)
   └── fix-bug                   (route bug tasks through orchestrator)
 
@@ -39,9 +39,13 @@ fix-bug
   └── → returns to start-task  (for QA verify + ship)
 
 ship-it
-  ├── pre-ship-check     (readiness gate)
+  ├── pre-ship-check     (readiness gate, owns QA verification gate)
   ├── work-summary       (session summary)
   └── create-pr          (open PR)
+
+pre-ship-check
+  ├── git-check                 (git state)
+  └── web-qa / mobile-qa        (QA verification prompt on non-bug tasks; resolution per plugin references/qa-routing.md)
 ```
 
 generic-qa (shared markdown, not a skill)
