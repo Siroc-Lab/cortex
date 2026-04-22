@@ -82,7 +82,7 @@ last_updated: "<iso8601>"
 | QA: Fix Bug | [ ] | | 0 | — | [x] |
 | QA: Verify Fix | [ ] | | 0 | — | [ ] |
 | QA: Verify Non-Bug | [ ] | | 0 | — | [ ] |
-| 11. Ship It | [ ] | | 0 | — | [x] |
+| 12. Ship It | [ ] | | 0 | — | [x] |
 
 ## Notes
 ```
@@ -204,7 +204,7 @@ A `[~]` row is terminal. Resume skips over it the same as `[x]`.
 | QA: Fix Bug | `Fix ready`, `Failed: <reason>`, or skipped reason |
 | QA: Verify Fix | `Pass`, `Fail`, or skipped reason |
 | QA: Verify Non-Bug | `Passed`, `Failed: <reason>`, or skipped reason |
-| 11. Ship It | `Shipped: <pr-url>` |
+| 12. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates
 
@@ -316,7 +316,7 @@ Resuming work on branch `<branch>`
 - Steps mode: check out the branch and continue from the first incomplete step.
 - Default mode: check out the branch. Skip the validation steps that already ran before the pause. Load the checkpoint context into the working session. Route to the workflow specified in the `workflow` field.
 
-**8. Clean up (default mode only)** — delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward. In steps mode, the checkpoint persists until Step 11 completes (see Section 7).
+**8. Clean up (default mode only)** — delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward. In steps mode, the checkpoint persists until Step 12 completes (see Section 7).
 
 ---
 
@@ -338,7 +338,7 @@ Resuming work on branch `<branch>`
 
 ## Section 7: Lifecycle End (Steps Mode)
 
-After Step 11 (Ship It) completes successfully, **delete the checkpoint file**:
+After Step 12 (Ship It) completes successfully, **delete the checkpoint file**:
 
 ```bash
 rm .claude/checkpoints/<task-gid>.md
@@ -348,6 +348,6 @@ The checkpoint's lifetime is one start → develop → ship pass. Once shipped, 
 
 If the checkpoint is not deleted, a stale file may incorrectly trigger a resume the next time `/start-task` is run against the same task GID.
 
-If Step 11 fails partway (e.g., `ship-it` sub-skill error), leave the checkpoint in place with `State → blocked` so the operator can retry. Only delete on successful completion of Step 11.
+If Step 12 fails partway (e.g., `ship-it` sub-skill error), leave the checkpoint in place with `State → blocked` so the operator can retry. Only delete on successful completion of Step 12.
 
-Default mode does not need a Section 7 equivalent — a default-mode checkpoint is already deleted by Resume Flow Step 8 on successful resume, so by the time Step 11 ships there is no file to clean up.
+Default mode does not need a Section 7 equivalent — a default-mode checkpoint is already deleted by Resume Flow Step 8 on successful resume, so by the time Step 12 ships there is no file to clean up.

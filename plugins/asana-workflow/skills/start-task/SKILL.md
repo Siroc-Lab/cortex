@@ -29,9 +29,9 @@ Take an Asana task, validate it's ready for development, understand the work, se
 
 Set when `fast_mode` flag is active (see Argument Parsing below).
 
-Fast mode runs the full lifecycle (Steps 0–9 and Step 11) unchanged but replaces Step 10 skill routing with direct inline implementation. No `feature-dev`, `brainstorming`, `fix-bug`, or QA skill is invoked — implement the solution immediately using built-in tools (Read, Edit, Bash, Grep, etc.) and reason about it directly in this conversation.
+Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replaces Step 10 skill routing with direct inline implementation, and skips Step 11 (QA sub-flow) entirely. No `feature-dev`, `brainstorming`, `fix-bug`, or QA skill is invoked — implement the solution immediately using built-in tools (Read, Edit, Bash, Grep, etc.) and reason about it directly in this conversation.
 
-**What is skipped:** only the sub-skill routing in Step 10 and the entire QA sub-flow. Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
+**What is skipped:** only the sub-skill routing in Step 10 and the entire Step 11 QA sub-flow. Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
 
 ## Steps Mode
 
@@ -113,7 +113,7 @@ If a branch or PR exists, offer to resume or start fresh. If resuming, check out
 
 After fetching remote refs, check for `.claude/checkpoints/<task-gid>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. The checkpoint format is detected from its contents (presence of a `## Steps` table = steps mode, narrative body = default mode); resume honors the file's original mode regardless of the current `$ARGUMENTS`. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
 
-On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint. The same Step 11 ship-it handoff applies after the workflow completes.
+On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint. The same Step 12 ship-it handoff applies after the workflow completes.
 
 ### Step 6b: Ask About Worktree (BLOCKING)
 
@@ -184,7 +184,7 @@ Post a start comment on the task with the branch name and draft PR URL. Deduplic
 
 Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
 
-**If `fast_mode`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip the entire QA sub-flow and proceed to Step 11 when done.
+**If `fast_mode`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip Step 11 (QA sub-flow) entirely and proceed to Step 12 when done.
 
 **Otherwise:**
 
@@ -203,13 +203,13 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
-### QA Sub-flow
+### Step 11: QA Sub-flow
 
-Between Step 10 and Step 11 — after the development workflow completes for non-bugs, or immediately after routing for bugs — run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally).
+Run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally). For non-bug tasks this runs after the development workflow returns; for bug tasks it runs immediately after routing.
 
 **In fast mode** the sub-flow is skipped entirely. In steps-mode checkpoints, mark every QA row `[~]` / `skipped` / `fast mode`.
 
-### Step 11: Ship It
+### Step 12: Ship It
 
 **This step runs after the bug QA verify loop (for bugs) or the non-bug QA verification (for non-bugs) completes — or when the operator skips QA.** Do not wait for the user to ask.
 
