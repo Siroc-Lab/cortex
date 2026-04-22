@@ -1,28 +1,96 @@
 # Checkpoints Reference
 
-## Section 1: Checkpoint File Format
+Checkpoints let `start-task` pause and resume work without losing context. There are two levels of tracking:
 
-**Location:** `.claude/checkpoints/<task-id>.md`
+- **Default (no `steps`):** a checkpoint is only written when the user pauses via the Pause Flow. Section 1's full step table is not required — a lightweight frontmatter + notes body is enough.
+- **Steps mode (`$ARGUMENTS` contains `steps`):** the checkpoint is initialized on entry and updated around every step. The step table in Section 1 is the single source of truth for task progress.
 
-Create the directory on first use with `mkdir -p .claude/checkpoints/`. Add `.claude/checkpoints/` to `.gitignore` — these are local-only state files and must not be committed.
+Both modes share the same file location, pause flow, and resume flow.
 
-If a checkpoint already exists for this task, overwrite it. Re-pausing replaces the previous checkpoint.
+---
 
-### Required Frontmatter Fields
+## Section 1: File Format
+
+**Location:** `.claude/checkpoints/<task-gid>.md`
+
+Use the Asana task GID (numeric) as the filename — it is available from the URL before any API call is made. Create the directory on first use: `mkdir -p .claude/checkpoints/`. Ensure `.claude/checkpoints/` is in `.gitignore` — these are local-only state files and must not be committed.
+
+**Never overwrite an existing checkpoint on initialization.** If the file exists, work was already started — load it and resume.
+
+### Frontmatter Fields
 
 | Field | Description |
-|---|---|
-| `task_id` | Project ID from Asana custom field (e.g., `MT251-47`) |
-| `task_gid` | Asana task GID (numeric string) |
+|-------|-------------|
+| `task_gid` | Asana task GID (numeric, from URL) |
+| `task_id` | Project ID custom field (e.g., `MT251-47`) — filled in after Step 2 |
 | `asana_url` | Full Asana task URL |
-| `branch` | Feature branch name (e.g., `MT251-47/add-csv-export`) |
-| `base_branch` | Branch it was created from (e.g., `main`) |
-| `workflow` | Downstream skill: `feature-dev` or `systematic-debugging` |
-| `phase` | Where pause happened: `discovery`, `implementation`, or `review` |
-| `paused_at` | ISO 8601 timestamp — used to filter new Asana comments on resume |
-| `blocked_on` | Name of the person who should answer (informational) |
+| `branch` | Feature branch name — filled in after Step 7 |
+| `base_branch` | Branch it was created from — filled in after Step 7 |
+| `workflow` | `fix-bug`, `brainstorm`, `feature-dev`, or `fast` — filled in after Step 10 |
+| `created_at` | ISO 8601 timestamp — set once on initialization |
+| `last_updated` | ISO 8601 timestamp — updated after every step (steps mode) or on pause (default mode) |
+| `paused_at` | ISO 8601 timestamp — set when entering the Pause Flow; used to filter new Asana comments on resume |
+| `blocked_on` | Name of the person who should answer (informational) — set when blocked |
 
-### Example Checkpoint File
+### Steps Table (steps mode)
+
+Six-column markdown table tracking every step of the workflow.
+
+| Column | Values | Description |
+|--------|--------|-------------|
+| **Step** | Text | Step number and name |
+| **Completed** | `[ ]` / `[x]` | Whether the step finished successfully |
+| **Comment** | Text | Key data captured or what happened |
+| **Attempts** | Integer | How many times this step has been attempted (starts at 0) |
+| **State** | `—` / `in_progress` / `completed` / `blocked` | Current execution state |
+| **Auto** | `[ ]` / `[x]` | `[x]` if completed without user input; `[ ]` if user approval was required |
+
+### Template (New Checkpoint, steps mode)
+
+```markdown
+---
+task_gid: ""
+task_id: ""
+asana_url: ""
+branch: ""
+base_branch: ""
+workflow: ""
+created_at: "<iso8601>"
+last_updated: "<iso8601>"
+---
+
+## Steps
+
+| Step | Completed | Comment | Attempts | State | Auto |
+|------|-----------|---------|----------|-------|------|
+| 0. Dependency Check | [ ] | | 0 | — | [ ] |
+| 1. Get Task URL | [ ] | | 0 | — | [x] |
+| 2. Fetch Task Details | [ ] | | 0 | — | [x] |
+| 3. Validate Sprint-Readiness | [ ] | | 0 | — | [ ] |
+| 4. Fetch Subtasks | [ ] | | 0 | — | [x] |
+| 5. Fetch Comments & Attachments | [ ] | | 0 | — | [x] |
+| 6. Check Existing Work | [ ] | | 0 | — | [x] |
+| 6b. Ask About Worktree | [ ] | | 0 | — | [ ] |
+| 6c. Confirm Base Branch | [ ] | | 0 | — | [ ] |
+| 7. Create Feature Branch | [ ] | | 0 | — | [x] |
+| 8. Create Draft PR | [ ] | | 0 | — | [x] |
+| 9. Move to In Progress + Post Comment | [ ] | | 0 | — | [x] |
+| 10. Route to Workflow | [ ] | | 0 | — | [ ] |
+| 10a. Resolve QA Skill | [ ] | | 0 | — | [ ] |
+| 10b. Verify Bug (investigate) | [ ] | | 0 | — | [ ] |
+| 10c. Fix Bug | [ ] | | 0 | — | [x] |
+| 10d. Verify Fix | [ ] | | 0 | — | [ ] |
+| 10e. QA Verification (non-bug) | [ ] | | 0 | — | [ ] |
+| 11. Ship It | [ ] | | 0 | — | [x] |
+
+## Notes
+```
+
+Rows 10a–10e are only exercised when their preconditions apply (bug vs non-bug, QA skill != `none`). Leave unreached rows as `[ ]`, state `—`.
+
+### Template (Default Mode — Pause Only)
+
+When steps mode is not active, the checkpoint is created at pause time with only frontmatter and a narrative body. No Steps table is required.
 
 ```markdown
 ---
@@ -32,7 +100,6 @@ asana_url: https://app.asana.com/0/123456789/1209384756102938
 branch: MT251-47/add-csv-export
 base_branch: main
 workflow: feature-dev
-phase: implementation
 paused_at: 2026-03-24T14:32:00Z
 blocked_on: Sarah Chen
 ---
@@ -58,60 +125,128 @@ The relevant code is in `src/exporters/csv.ts`. The stub is marked with
 
 ---
 
-## Section 2: Pause Flow
+## Section 2: Initialization (Steps Mode Only)
+
+**This is the very first action `start-task` takes when `steps` is in `$ARGUMENTS`** — before any Asana API call, before any git command.
+
+1. **Extract task GID** from the URL in `$ARGUMENTS`. If no URL is provided, prompt for it now.
+
+2. **Check for an existing checkpoint:**
+   ```bash
+   ls .claude/checkpoints/<task-gid>.md 2>/dev/null
+   ```
+
+3. **If checkpoint found** → this is a resume. Go to **Section 5: Resume Flow**.
+
+4. **If no checkpoint** → create it now:
+   ```bash
+   mkdir -p .claude/checkpoints/
+   ```
+   Write the steps-mode template with `task_gid`, `asana_url`, `created_at`, `last_updated` filled in. All steps: `[ ]`, state `—`, attempts `0`. Add `.claude/checkpoints/` to `.gitignore` if not already present.
+
+In default mode, no checkpoint is created on entry. A checkpoint is only written if the user pauses (Section 4).
+
+---
+
+## Section 3: Step Updates (Steps Mode Only)
+
+**After every step, update the checkpoint immediately. This is not optional.**
+
+### Update Pattern
+
+When a step **starts**:
+- Set `State` → `in_progress`
+- Increment `Attempts` by 1
+- Update `last_updated` to now
+
+When a step **completes successfully**:
+- Set `Completed` → `[x]`
+- Set `State` → `completed`
+- Set `Comment` → key data (see table below)
+- Set `Auto` → `[x]` if no user input was needed; `[ ]` if user approved/decided something
+- Update `last_updated` to now
+
+When a step is **blocked**:
+- Set `State` → `blocked`
+- Set `Comment` → who or what is blocking
+- Update `last_updated` to now
+- Proceed to **Section 4: Pause Flow**
+
+### Comment Content Per Step
+
+| Step | Comment |
+|------|---------|
+| 0. Dependency Check | `All present` or `Missing: <skill-list>` |
+| 1. Get Task URL | `GID: <task-gid>` |
+| 2. Fetch Task Details | `<task-id> — <task-name>` |
+| 3. Validate Sprint-Readiness | `All checks passed` or `Fixed: <what was set via API>` |
+| 4. Fetch Subtasks | `<N> subtasks (<M> complete, <K> remaining)` |
+| 5. Fetch Comments & Attachments | `<N> comments, <M> attachments` |
+| 6. Check Existing Work | `No existing branch` or `Resumed: <branch-name>` |
+| 6b. Ask About Worktree | `worktree` or `current directory` |
+| 6c. Confirm Base Branch | `<base-branch>` |
+| 7. Create Feature Branch | `<branch-name> off <base>` |
+| 8. Create Draft PR | `<pr-url>` |
+| 9. Move to In Progress + Post Comment | `Moved + posted`, `Already in progress`, or `Failed: <reason>` |
+| 10. Route to Workflow | `fix-bug`, `brainstorm`, `feature-dev`, or `fast` |
+| 10a. Resolve QA Skill | `web-qa`, `mobile-qa`, or `none` |
+| 10b. Verify Bug (investigate) | `Confirmed` or `Cannot reproduce` |
+| 10c. Fix Bug | `Fix ready` or `Failed: <reason>` |
+| 10d. Verify Fix | `Pass` or `Fail` |
+| 10e. QA Verification (non-bug) | `Passed`, `Skipped`, or `Failed: <reason>` |
+| 11. Ship It | `Shipped: <pr-url>` |
+
+### Frontmatter Updates
+
+- After Step 2: set `task_id`
+- After Step 7: set `branch` and `base_branch`
+- After Step 10: set `workflow`
+
+---
+
+## Section 4: Pause Flow (Blocked)
 
 ### Trigger Phrases
 
-Initiate the pause flow when the user says any of the following:
-- "park this"
-- "I'm blocked"
-- "pause task"
-- "need to wait for an answer"
-- "put this on hold"
-- "waiting on [someone]"
-- "blocked by [someone]"
-- "save my progress"
-- "pick this up later"
-- "come back to this later"
+- "park this", "I'm blocked", "pause task"
+- "need to wait for an answer", "put this on hold"
+- "waiting on [someone]", "blocked by [someone]"
+- "save my progress", "pick this up later", "come back to this later"
 
 ### Steps
 
 **1. Verify branch**
-
-Confirm the current branch matches the task's branch. If on a different branch, warn the user before proceeding. If a merge is in progress, warn the user and do not commit.
+Confirm the current branch matches the task's branch (steps mode: `branch` in frontmatter). If on a different branch, warn before proceeding. If a merge is in progress, warn and do not commit.
 
 **2. Commit WIP**
-
-Stage all changes and commit with the message format:
+Stage all changes and commit with:
 ```
 WIP: <task-id> — blocked on [short reason]
 ```
-
 Example: `WIP: MT251-47 — blocked on timezone decision`
 
 **3. Draft blocking question**
+Formulate from conversation context. Present for user approval. The user MUST approve the exact wording before it is posted. Never post to Asana without explicit approval.
 
-Formulate the blocking question from conversation context. Present it to the user for approval before posting anywhere. Example draft:
+Example draft:
 
 > "Hey @Sarah Chen — quick question before I can finish the CSV export: should timestamps use the user's local timezone or UTC? This affects how `formatTimestamp()` is implemented."
 
-The user MUST approve the exact wording before it is posted. Never post to Asana without explicit approval.
-
 **4. Post to Asana**
+After approval, post via the `asana-api` skill. Include the @mention of the blocking person.
 
-After user approval, post the comment via the `asana-api` skill. Include the @mention of the blocking person.
+**5. Update / save checkpoint**
 
-**5. Save checkpoint**
+- **Steps mode:** set the current step's `State` → `blocked`, `Comment` → who is blocking. Set frontmatter `paused_at` and `blocked_on`. Append a `## Notes` entry with the blocking question and who to follow up with.
+- **Default mode:** create the checkpoint file now using the default-mode template. Fill in frontmatter, `## Blocked On`, `## Progress`, and `## Context for Resume`.
 
-Write the checkpoint file to `.claude/checkpoints/<task-id>.md`. Run `mkdir -p .claude/checkpoints/` if needed. Ensure `.claude/checkpoints/` is in `.gitignore`.
+Run `mkdir -p .claude/checkpoints/` if the directory is missing. Ensure `.claude/checkpoints/` is in `.gitignore`.
 
 **6. Push branch**
-
-Push the WIP commit to the remote branch.
+Push the WIP commit to remote.
 
 **7. Confirm**
-
-Report what was done: commit hash, Asana comment link, checkpoint path. Tell the user to run `/start-task` with the same Asana URL to resume.
+Report: commit hash, Asana comment link, checkpoint path. Instruct the user to run `/start-task` with the same URL to resume (add `steps` to keep steps-mode tracking if that's how it was started).
 
 ### Asana State
 
@@ -119,13 +254,14 @@ Leave the task status as "In Progress". Do not move the task to a different sect
 
 ---
 
-## Section 3: Resume Flow
+## Section 5: Resume Flow
 
-Resume is integrated into `start-task` Step 6. After running `git fetch --prune`, check for a checkpoint file before performing branch detection.
+**Default mode:** resume is integrated into `start-task` Step 6a. After running `git fetch --prune`, check for a checkpoint file before performing branch detection.
+
+**Steps mode:** resume is triggered by **Initialization (Section 2)** when a checkpoint file is found on entry.
 
 ### Trigger Phrases
 
-Initiate the resume flow when the user says:
 - "resume task"
 - "pick up where I left off"
 - "continue [task-id]"
@@ -133,47 +269,44 @@ Initiate the resume flow when the user says:
 
 ### Steps
 
-**1. Check for checkpoint file**
+**1. Load checkpoint**
 
-Look for `.claude/checkpoints/<task-id>.md`. If not found, fall through to the existing branch detection logic.
+- Steps mode: find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` rows entirely.
+- Default mode: read frontmatter (`branch`, `workflow`, `paused_at`, `blocked_on`) and the narrative body.
 
-**2. Verify branch exists**
+**2. Present current state** — show the user a summary. In steps mode, render the Steps table. In default mode, show who it was blocked on and the progress notes.
 
-Check whether the branch exists locally or on the remote. If the branch has been deleted:
-- Offer to recreate it from `base_branch`
-- Or offer to start fresh
+**3. Check for blocked state** — if the resuming step has `State = blocked` (steps mode) or the checkpoint has `blocked_on` set (default mode), fetch Asana stories posted after `paused_at` / `last_updated`. Show new comments as potential answers. If no new comments: offer to resume anyway or keep waiting.
 
-If starting fresh, delete the checkpoint file.
+**4. Verify branch exists** — check the branch exists locally or on remote. If deleted: offer to recreate from `base_branch` or start fresh. If starting fresh, delete the checkpoint file.
 
-**3. Check Asana task status**
+**5. Check task status** — if the task has been completed, reassigned, or moved to a different section since `paused_at` / `last_updated`, warn before proceeding.
 
-Fetch the current task state. If the task has been completed, reassigned, or moved to a different section since `paused_at`, warn the user before proceeding.
+**6. Post resume comment** (only if previous state was blocked):
 
-**4. Present checkpoint state**
-
-Show the user a summary: branch name, who it was blocked on, and the progress notes from the checkpoint body.
-
-**5. Check for answers**
-
-Fetch Asana stories (comments) created after the `paused_at` timestamp. Filter for comment-type stories. Present any new comments to the user.
-
-**6. Handle no answer**
-
-If no new comments have been posted since the pause, offer two options:
-- Resume anyway and continue without the answer
-- Keep waiting (exit without resuming)
+```
+Resuming work on branch `<branch>`
+```
 
 **7. Resume work**
 
-Check out the branch. Skip the validation steps that already ran before the pause. Load the checkpoint context into the working session. Route to the workflow specified in the `workflow` field (`feature-dev` or `systematic-debugging`), starting at the `phase` where work was paused.
+- Steps mode: check out the branch and continue from the first incomplete step.
+- Default mode: check out the branch. Skip the validation steps that already ran before the pause. Load the checkpoint context into the working session. Route to the workflow specified in the `workflow` field.
 
-**8. Post resume comment**
+**8. Clean up (default mode only)** — delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward. In steps mode, the checkpoint persists until Step 11 completes.
 
-Post a comment on the Asana task:
-```
-Resuming work on branch `<task-id>/<slug>`
-```
+---
 
-**9. Clean up**
+## Section 6: Edge Cases
 
-Delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward.
+**Branch deleted since pause** — offer to recreate from `base_branch`, or start fresh (deletes checkpoint).
+
+**Task completed in Asana since pause** — warn: "This task was completed in Asana on [date]. Resume anyway?"
+
+**Task reassigned since pause** — warn: "This task is now assigned to [name]. Resume anyway?"
+
+**Validation fails on resume at Step 3** — re-run validation fresh; present updated results.
+
+**Step 9 fails on resume** — non-blocking; report and continue.
+
+**No answer yet on resume** — if no new Asana comments have been posted since the pause, offer two options: resume anyway and continue without the answer, or keep waiting (exit without resuming).

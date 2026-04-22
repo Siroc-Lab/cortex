@@ -8,12 +8,12 @@ description: >
   lifecycle: validates sprint-readiness, sets up the branch and draft PR, routes to the right
   development workflow (feature-dev, fix-bug, or brainstorm), and ships via ship-it when done.
   Also handles pausing blocked work ("park this", "I'm blocked", "pause task", "put this on hold")
-  and resuming ("resume task", "pick up where I left off", "continue [task-id]"). Use this variant
-  for straightforward tasks; use start-task-steps for long or complex tasks that need step-by-step
-  checkpoint tracking. For a shortcut that runs the full Asana orchestration and ship-it but skips
-  sub-skill routing (feature-dev, brainstorming, fix-bug) and implements inline instead, add "fast"
-  to the arguments — "start task fast", "fast mode", "just start coding".
-argument-hint: <asana-task-url> [brainstorm|feature-dev|fast]
+  and resuming ("resume task", "pick up where I left off", "continue [task-id]"). For long, complex,
+  or interruptible tasks that need step-by-step checkpoint tracking, add "steps" to the arguments —
+  "start task steps", "with checkpoints". For a shortcut that runs the full Asana orchestration and
+  ship-it but skips sub-skill routing (feature-dev, brainstorming, fix-bug) and implements inline
+  instead, add "fast" to the arguments — "start task fast", "fast mode", "just start coding".
+argument-hint: <asana-task-url> [brainstorm|feature-dev|fast] [steps]
 ---
 
 # Start Task
@@ -33,9 +33,28 @@ Fast mode runs the full lifecycle (Steps 0–9 and Step 11) unchanged but replac
 
 **What is skipped:** only the sub-skill routing in Step 10 (and the Bug sub-steps 10a–10d). Everything else — dependency checks, sprint validation, branch creation, draft PR, Asana status move/comment, and the ship-it handoff — runs as normal.
 
+## Steps Mode
+
+**Trigger:** `$ARGUMENTS` contains `steps`.
+
+Steps mode does not change the flow — every step below runs as normal. It only adds mandatory checkpoint bookkeeping so work can be paused and resumed at any point without losing progress.
+
+**The rule:** when steps mode is active, a step is not complete until its row in the checkpoint file is updated. For every step:
+
+1. Mark the row: `State` → `in_progress`, `Attempts` +1, update `last_updated`.
+2. Do the step's work.
+3. Mark the row: `Completed` → `[x]`, `State` → `completed`, fill `Comment` and `Auto`.
+4. Only then: move to the next step.
+
+If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. Never leave a step as `in_progress` and advance past it.
+
+Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints.md`** for the file format, the full steps table, comment conventions, initialization, and resume rules.
+
+Steps mode is orthogonal to `fast`, `brainstorm`, and `feature-dev` — it can be combined with any of them.
+
 ## The Flow
 
-**Before Step 0:** Check if `$ARGUMENTS` contains `fast`. If so, note it — Steps 0–9 and Step 11 run as normal, but Step 10 will skip skill routing and implement inline instead.
+**Before Step 0:** Parse `$ARGUMENTS`. If it contains `fast`, note it — Step 10 will skip skill routing and implement inline. If it contains `steps`, initialize the checkpoint per **`references/checkpoints.md`** Section 2 (or resume from it) before proceeding, and update the checkpoint around every step per the Steps Mode rule above.
 
 ### Step 0: Check External Skill Dependencies
 
