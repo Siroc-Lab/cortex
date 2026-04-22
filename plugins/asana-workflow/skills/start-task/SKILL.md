@@ -97,7 +97,9 @@ If a branch or PR exists, offer to resume or start fresh. If resuming, check out
 
 ### Step 6a: Check for Checkpoint (Resume)
 
-After fetching remote refs, check for `.claude/checkpoints/<task-id>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
+**Skip this step in steps mode** — Section 2 of `references/checkpoints.md` already handled checkpoint detection before Step 0.
+
+After fetching remote refs, check for `.claude/checkpoints/<task-gid>.md`. If found, this is a resume — present the checkpoint state, check for new Asana comments since the pause, and offer to resume. The checkpoint format is detected from its contents (presence of a `## Steps` table = steps mode, narrative body = default mode); resume honors the file's original mode regardless of the current `$ARGUMENTS`. See **`references/checkpoints.md`** for the full resume flow and edge cases (deleted branch, completed task, no answer yet).
 
 On resume, skip validation and branch creation — check out the existing branch and route directly to the workflow specified in the checkpoint. The same Step 11 ship-it handoff applies after the workflow completes.
 
@@ -189,68 +191,14 @@ Compile full task context (name, notes, custom fields, task ID, subtasks, commen
 
 The branch is already created and checked out — the downstream skill works on it directly.
 
-### Step 10a: Resolve QA Skill
+### Steps 10a–10e: QA Sub-flow
 
-Determine which QA skill to invoke. This applies to **all task categories** — bugs use it for the investigate/verify loop, non-bugs use it for completion verification (Step 10e).
+- **Bug tasks** — run the verify → fix → verify loop: resolve QA skill (10a), invoke it in investigate mode to confirm the bug (10b), invoke `fix-bug` with the investigation report as context (10c), invoke the QA skill in verify mode to confirm the fix (10d). Loop 10c/10d on failure.
+- **Non-bug tasks** — after the development workflow completes, ask the operator (hard gate, cannot be auto-answered) whether to run QA verification (10e). If yes, invoke the QA skill; if skip, proceed.
+- **Fast mode** — skip 10a–10e entirely (mark `[~]` / `skipped` / `fast mode` in steps-mode checkpoints).
+- **QA skill resolved to `none`** — for bugs, skip 10b and 10d but still run 10c with ticket-only context. For non-bugs, skip 10e.
 
-Check in order:
-
-1. **CLAUDE.md** — look for a `qa-skill:` declaration (e.g., `qa-skill: web-qa`, `qa-skill: mobile-qa`, or `qa-skill: none`). If found, use it.
-2. **Project signals** — infer from project files:
-   - `package.json` (without React Native), `vite.config.*`, `next.config.*` → `web-qa`
-   - `.xcodeproj`, `.xcworkspace`, `Info.plist` → `mobile-qa`
-   - `build.gradle`, `build.gradle.kts`, `AndroidManifest.xml` → `mobile-qa`
-   - `app.json` / `app.config.js` with React Native/Expo → `mobile-qa`
-   - No UI framework detected (pure backend, CLI, API, library, infrastructure) → `none`
-3. **Ambiguous** — ask the operator (blocking):
-   > "Which QA skill should I use?
-   > 1. `web-qa` (browser-based, Chrome DevTools MCP)
-   > 2. `mobile-qa` (simulator/emulator/device, mobile testing MCP)
-   > 3. `none` (no visual UI to verify — backend, API, CLI, library)"
-
-Use the resolved QA skill for all QA invocations in this task.
-
-**If `none`:** For bug tasks, skip 10b and 10d (no visual QA to run) but still run 10c (fix-bug with Asana ticket context only). For non-bug tasks, skip straight to Step 11.
-
-### Step 10b: Verify Bug
-
-Invoke the resolved QA skill in **investigate** mode with the bug description from the Asana ticket as the question and the SUT identifier (URL or app bundle ID, if known from CLAUDE.md or task notes).
-
-- **Confirmed** (bug reproduced with evidence) → the QA skill posts the report to the Asana task (Step 6 in the generic-qa process). Proceed to Step 10c, passing the full report as context.
-- **Cannot reproduce** → **stop**. Tell the operator the bug could not be reproduced. Let them decide: fix SUT setup, clarify the bug description, or skip verification and proceed to debugging anyway.
-
-### Step 10c: Fix Bug
-
-Invoke `fix-bug` with the QA report from Step 10b as enriched context. This gives the debugger richer context than the ticket alone — reproduction steps, evidence, and root cause analysis from runtime observation. If Step 10b was skipped (QA skill is `none`), invoke `fix-bug` with just the Asana ticket context.
-
-`fix-bug` returns after root cause investigation + TDD pass. It does **not** verify or ship — that is start-task's responsibility (Steps 10d and 11).
-
-### Step 10d: Verify Fix (BLOCKING)
-
-**This step cannot be skipped.** After `fix-bug` returns, re-invoke the resolved QA skill in **verify** mode with the original reproduction steps from Step 10b. The QA skill will rebuild, deploy, and replay the steps.
-
-- **Pass** → QA skill posts `✅ QA Verification — PASSED` to Asana with evidence. Proceed to Step 11.
-- **Fail** → QA skill posts `❌ QA Verification — FAILED` to Asana with evidence. Return to Step 10c for another debugging pass.
-
-### Step 10e: QA Verification (Non-Bug Tasks)
-
-**Applies to non-bug tasks only.** Bug tasks already have QA via Steps 10b/10d.
-
-**HARD GATE — always stop and wait for the operator's answer. Auto mode's "minimize interruptions" directive does NOT override this step.**
-
-Skip asking only if the operator has already provided an explicit answer about QA in this session — e.g., passed `skip QA` in the start-task arguments, or said "skip QA" / "run QA" earlier in the conversation. Inferred triviality (small change, simple fix, XS sizing) is NOT a valid reason to skip.
-
-After the development workflow signals completion, ask:
-
-> "Implementation is complete. The changes can be visually verified before shipping — I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.
->
-> Run QA verification? [yes / skip]"
-
-Wait for the operator's answer before continuing.
-
-If **yes** — resolve the QA skill (Step 10a, if not already resolved) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
-
-If **skip** — proceed to Step 11. ship-it will offer one more chance if no QA evidence is found.
+See **`references/qa-routing.md`** for the full QA skill resolution logic, each sub-step's invocation details, outcome handling, and the shared reference used by `ship-it`'s Step 2.
 
 ### Step 11: Ship It
 
@@ -270,6 +218,8 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
 
+**Steps mode only:** after `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** Section 7.
+
 ## Pause Flow
 
 Triggered when the user says "park this", "I'm blocked", "pause task", or similar during any phase of work. Commits WIP, drafts a blocking question for user approval, posts to Asana, saves a checkpoint, and pushes. See **`references/checkpoints.md`** for the full pause flow, checkpoint file format, and trigger phrases.
@@ -287,3 +237,4 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
 - **`references/checkpoints.md`** — Checkpoint file format, pause flow, resume flow, edge cases
+- **`references/qa-routing.md`** — QA skill resolution and Steps 10a–10e sub-flow (shared with ship-it)

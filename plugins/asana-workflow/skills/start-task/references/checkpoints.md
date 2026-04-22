@@ -137,7 +137,7 @@ The relevant code is in `src/exporters/csv.ts`. The stub is marked with
    ls .claude/checkpoints/<task-gid>.md 2>/dev/null
    ```
 
-3. **If checkpoint found** → this is a resume. Go to **Section 5: Resume Flow**.
+3. **If checkpoint found** → this is a resume. Detect the file's mode (Section 5 "Mode Detection") and go to **Section 5: Resume Flow**. If the file is default-mode, resume proceeds as default mode even though the operator passed `steps` — the file's mode is authoritative.
 
 4. **If no checkpoint** → create it now:
    ```bash
@@ -266,9 +266,22 @@ Leave the task status as "In Progress". Do not move the task to a different sect
 
 ## Section 5: Resume Flow
 
+### Mode Detection
+
+**Resume honors the checkpoint's original mode, not the current `$ARGUMENTS`.** A file created in steps mode always resumes as steps mode, even if the operator starts this session without `steps`; a default-mode file always resumes as default mode, even if the operator passes `steps`.
+
+Detect the mode by reading the file:
+
+- Contains a `## Steps` table → **steps mode**.
+- Frontmatter + narrative body only → **default mode**.
+
+If the operator's `$ARGUMENTS` mode disagrees with the file's mode, inform the operator briefly (`"Resuming as steps mode (checkpoint was created with checkpoints enabled)"`) and proceed using the file's mode. Do not ask — the file is authoritative.
+
+### Entry Points
+
 **Default mode:** resume is integrated into `start-task` Step 6a. After running `git fetch --prune`, check for a checkpoint file before performing branch detection.
 
-**Steps mode:** resume is triggered by **Initialization (Section 2)** when a checkpoint file is found on entry.
+**Steps mode:** resume is triggered by **Initialization (Section 2)** when a checkpoint file is found on entry — before any other step runs. Step 6a is skipped in steps mode.
 
 ### Trigger Phrases
 
@@ -303,7 +316,7 @@ Resuming work on branch `<branch>`
 - Steps mode: check out the branch and continue from the first incomplete step.
 - Default mode: check out the branch. Skip the validation steps that already ran before the pause. Load the checkpoint context into the working session. Route to the workflow specified in the `workflow` field.
 
-**8. Clean up (default mode only)** — delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward. In steps mode, the checkpoint persists until Step 11 completes.
+**8. Clean up (default mode only)** — delete the checkpoint file after successful resume. The branch and Asana task are the source of truth going forward. In steps mode, the checkpoint persists until Step 11 completes (see Section 7).
 
 ---
 
@@ -320,3 +333,21 @@ Resuming work on branch `<branch>`
 **Step 9 fails on resume** — non-blocking; report and continue.
 
 **No answer yet on resume** — if no new Asana comments have been posted since the pause, offer two options: resume anyway and continue without the answer, or keep waiting (exit without resuming).
+
+---
+
+## Section 7: Lifecycle End (Steps Mode)
+
+After Step 11 (Ship It) completes successfully, **delete the checkpoint file**:
+
+```bash
+rm .claude/checkpoints/<task-gid>.md
+```
+
+The checkpoint's lifetime is one start → develop → ship pass. Once shipped, the Asana task status moves to "In Review" and the PR is ready for review — any further work on the branch (code-review fixes, reviewer feedback, follow-up commits) is **out of scope** for start-task and is not tracked by this checkpoint. It happens through git + the PR review thread, or via a different skill.
+
+If the checkpoint is not deleted, a stale file may incorrectly trigger a resume the next time `/start-task` is run against the same task GID.
+
+If Step 11 fails partway (e.g., `ship-it` sub-skill error), leave the checkpoint in place with `State → blocked` so the operator can retry. Only delete on successful completion of Step 11.
+
+Default mode does not need a Section 7 equivalent — a default-mode checkpoint is already deleted by Resume Flow Step 8 on successful resume, so by the time Step 11 ships there is no file to clean up.
