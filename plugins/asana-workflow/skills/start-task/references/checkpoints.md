@@ -39,10 +39,10 @@ Six-column markdown table tracking every step of the workflow.
 | Column | Values | Description |
 |--------|--------|-------------|
 | **Step** | Text | Step number and name |
-| **Completed** | `[ ]` / `[x]` | Whether the step finished successfully |
+| **Completed** | `[ ]` / `[x]` / `[~]` | `[x]` done, `[~]` skipped as not-applicable, `[ ]` still open |
 | **Comment** | Text | Key data captured or what happened |
 | **Attempts** | Integer | How many times this step has been attempted (starts at 0) |
-| **State** | `—` / `in_progress` / `completed` / `blocked` | Current execution state |
+| **State** | `—` / `in_progress` / `completed` / `blocked` / `skipped` | Current execution state |
 | **Auto** | `[ ]` / `[x]` | `[x]` if completed without user input; `[ ]` if user approval was required |
 
 ### Template (New Checkpoint, steps mode)
@@ -74,7 +74,8 @@ last_updated: "<iso8601>"
 | 6c. Confirm Base Branch | [ ] | | 0 | — | [ ] |
 | 7. Create Feature Branch | [ ] | | 0 | — | [x] |
 | 8. Create Draft PR | [ ] | | 0 | — | [x] |
-| 9. Move to In Progress + Post Comment | [ ] | | 0 | — | [x] |
+| 9a. Move to In Progress | [ ] | | 0 | — | [x] |
+| 9b. Post Start Comment | [ ] | | 0 | — | [x] |
 | 10. Route to Workflow | [ ] | | 0 | — | [ ] |
 | 10a. Resolve QA Skill | [ ] | | 0 | — | [ ] |
 | 10b. Verify Bug (investigate) | [ ] | | 0 | — | [ ] |
@@ -172,6 +173,14 @@ When a step is **blocked**:
 - Update `last_updated` to now
 - Proceed to **Section 4: Pause Flow**
 
+When a step does **not apply** in this run (wrong category, `qa-skill=none`, fast mode, operator opted out):
+- Set `Completed` → `[~]`
+- Set `State` → `skipped`
+- Set `Comment` → reason (e.g., `fast mode`, `non-bug task`, `qa-skill=none`, `operator skipped`)
+- Update `last_updated` to now
+
+A `[~]` row is terminal. Resume skips over it the same as `[x]`.
+
 ### Comment Content Per Step
 
 | Step | Comment |
@@ -187,13 +196,14 @@ When a step is **blocked**:
 | 6c. Confirm Base Branch | `<base-branch>` |
 | 7. Create Feature Branch | `<branch-name> off <base>` |
 | 8. Create Draft PR | `<pr-url>` |
-| 9. Move to In Progress + Post Comment | `Moved + posted`, `Already in progress`, or `Failed: <reason>` |
+| 9a. Move to In Progress | `Moved`, `Already in progress`, or `Failed: <reason>` |
+| 9b. Post Start Comment | `Posted` or `Skipped (duplicate)` |
 | 10. Route to Workflow | `fix-bug`, `brainstorm`, `feature-dev`, or `fast` |
-| 10a. Resolve QA Skill | `web-qa`, `mobile-qa`, or `none` |
-| 10b. Verify Bug (investigate) | `Confirmed` or `Cannot reproduce` |
-| 10c. Fix Bug | `Fix ready` or `Failed: <reason>` |
-| 10d. Verify Fix | `Pass` or `Fail` |
-| 10e. QA Verification (non-bug) | `Passed`, `Skipped`, or `Failed: <reason>` |
+| 10a. Resolve QA Skill | `web-qa`, `mobile-qa`, `none`, or skipped reason |
+| 10b. Verify Bug (investigate) | `Confirmed`, `Cannot reproduce`, or skipped reason |
+| 10c. Fix Bug | `Fix ready`, `Failed: <reason>`, or skipped reason |
+| 10d. Verify Fix | `Pass`, `Fail`, or skipped reason |
+| 10e. QA Verification (non-bug) | `Passed`, `Failed: <reason>`, or skipped reason |
 | 11. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates
@@ -271,7 +281,7 @@ Leave the task status as "In Progress". Do not move the task to a different sect
 
 **1. Load checkpoint**
 
-- Steps mode: find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` rows entirely.
+- Steps mode: find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` and `[~]` rows entirely.
 - Default mode: read frontmatter (`branch`, `workflow`, `paused_at`, `blocked_on`) and the narrative body.
 
 **2. Present current state** — show the user a summary. In steps mode, render the Steps table. In default mode, show who it was blocked on and the progress notes.

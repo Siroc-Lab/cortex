@@ -46,7 +46,7 @@ Steps mode does not change the flow — every step below runs as normal. It only
 3. Mark the row: `Completed` → `[x]`, `State` → `completed`, fill `Comment` and `Auto`.
 4. Only then: move to the next step.
 
-If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. Never leave a step as `in_progress` and advance past it.
+If a step fails or blocks, set `State` → `blocked` and follow the Pause Flow. If a step's preconditions don't apply in this run (wrong category, `qa-skill=none`, fast mode, operator opted out), mark it as skipped: `Completed` → `[~]`, `State` → `skipped`, `Comment` → the reason. A `[~]` row is terminal — treated like `[x]` on resume. Never leave a step as `in_progress` and advance past it.
 
 Before anything else, initialize the checkpoint file at `.claude/checkpoints/<task-gid>.md`. If a checkpoint already exists, load it and resume from the first incomplete row instead of re-running completed steps. See **`references/checkpoints.md`** for the file format, the full steps table, comment conventions, initialization, and resume rules.
 
@@ -154,13 +154,17 @@ Immediately after creating the branch, create an empty commit and a draft PR to 
 
 4. Capture the draft PR URL — it will be included in the Asana start comment and threaded through to ship-it.
 
-### Step 9: Move to In Progress + Post Comment
+### Step 9a: Move to In Progress
 
-These happen automatically — no permission needed.
+**This happens automatically — no permission needed.**
 
-**Move the task** to "In Progress" on the Sprint board. Skip if already there. See **`references/asana-patterns.md`** for the section move API pattern.
+Move the task to "In Progress" on the Sprint board. Skip if already there. See **`references/asana-patterns.md`** for the section move API pattern. If the move fails, report why but do not block the workflow — proceed to Step 9b.
 
-**Post a start comment** on the task with the branch name and draft PR URL (deduplicate by checking for existing 🏁 comment for this branch). If the move fails, report why but do not block the workflow.
+### Step 9b: Post Start Comment
+
+**This happens automatically — no permission needed.**
+
+Post a start comment on the task with the branch name and draft PR URL. Deduplicate by checking for an existing 🏁 comment for this branch. See **`references/asana-patterns.md`** for the comment format.
 
 ### Step 10: Route to the Right Workflow
 
@@ -262,7 +266,7 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 | Branch name | Created in Step 7 |
 | Draft PR URL | Captured in Step 8 |
 | Sprint project GID | From board cache `active_sprint.gid` (loaded in Step 3) |
-| Section mappings | Discovered when moving to "In Progress" (Step 9) |
+| Section mappings | Discovered when moving to "In Progress" (Step 9a) |
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
 
