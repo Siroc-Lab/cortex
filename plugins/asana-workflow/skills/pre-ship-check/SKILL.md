@@ -19,6 +19,10 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 - **Standalone** — The user asks "am I ready to ship?" and wants a full status report.
 - **Orchestrator step** — Called by `ship-it` as its first step. Blocking findings halt the pipeline.
 
+## Flow-Completeness Rule
+
+**All four steps must run unless a BLOCKING step stops the flow.** Passing a gate (Step 1) means "this gate passes" — it does **not** mean "pre-ship-check is done." After any step that passes (including long-running ones like the QA skill invocation in Step 1d Yes), always proceed to the next numbered step. pre-ship-check's final report (see Output Format) is only emitted after Step 4 — if you find yourself about to return control without producing that report, you have skipped a step.
+
 ## Step 1: QA Verification Gate
 
 **Only applies when a task GID is in context. Skip when no task GID is available.**
@@ -50,8 +54,8 @@ Readiness gate that validates code is in a shippable state. Combines git state v
 
   Wait for the operator's answer before continuing.
 
-  - If **Yes** → resolve the QA skill per `plugins/asana-workflow/references/qa-routing.md` ("Resolving the QA Skill") and invoke it with a summary of what was built/changed (from git diff/log). The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Gate passes.
-  - If **Skip** → operator has explicitly acknowledged the absence. Gate passes with a note in the final report: `QA skipped by operator`.
+  - If **Yes** → resolve the QA skill per `plugins/asana-workflow/references/qa-routing.md` ("Resolving the QA Skill") and invoke it with a summary of what was built/changed (from git diff/log). The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Gate passes — **proceed to Step 2**. pre-ship-check is not complete until Steps 2–4 have also run.
+  - If **Skip** → operator has explicitly acknowledged the absence. Gate passes with a note for the final report: `QA skipped by operator` — **proceed to Step 2**. pre-ship-check is not complete until Steps 2–4 have also run.
 
 ## Step 2: Git State Validation
 
@@ -97,7 +101,7 @@ Before running the test suite, ask:
 
 ## Output Format
 
-Combine findings from git-check and project commands into a single report:
+Combine findings from the QA gate (Step 1), git-check (Step 2), and project commands (Step 4) into a single report:
 
 ```
 BLOCKING
@@ -108,15 +112,19 @@ WARNINGS
   - Debug artifact: console.log found in src/utils/helper.ts (line 42)
 
 PASSED
+  - QA: verified (or "QA: skipped by operator" / "QA: not applicable (qa-skill=none)" / "QA: no task context")
   - Git checks passed
   - Tests passing
 ```
 
-Omit any section that has no findings. If everything passes:
+The QA row is **mandatory** in the PASSED section — it must explicitly state how Step 1 resolved (verified in this session, skipped, n/a, or no task). A missing QA row is a signal that Step 1 didn't run to completion.
+
+Omit other sections that have no findings. If everything passes:
 
 ```
 PASSED
-  - All checks passed. Ready to ship.
+  - QA: verified
+  - All other checks passed. Ready to ship.
 ```
 
 ## Behavior Rules
