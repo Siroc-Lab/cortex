@@ -23,7 +23,7 @@ Take an Asana task, validate it's ready for development, understand the work, se
 ## Prerequisites
 
 - `asana-api` skill for all Asana API operations — handles token resolution and setup guidance.
-- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, `web-qa` or `mobile-qa` (resolved per `plugins/asana-workflow/references/qa-routing.md`), and optionally `superpowers:brainstorming` skills
+- Access to `feature-dev:feature-dev`, `superpowers:systematic-debugging`, and optionally `superpowers:brainstorming` skills (external — see `references/skill-dependencies.md`).
 
 ## Fast Mode
 
