@@ -4,9 +4,10 @@ version: 0.1.0
 description: >
   This skill should be used when the user says "am I ready to ship", "pre-flight check",
   "check before PR", "ready to merge", "pre-ship check", "can I ship this", "is this ready",
-  or "run checks". Validates that code is in a shippable state by running git-check for branch
-  and working tree validation, then verifying lint, build, and tests pass. Works standalone
-  or as the first step in the ship-it orchestrator.
+  or "run checks". Validates that code is in a shippable state: enforces the QA verification
+  gate (blocks bugs without verification, prompts the operator on non-bug tasks without
+  verification), runs git-check for branch and working tree validation, then verifies lint,
+  build, and tests pass. Works standalone or as the first step in the ship-it orchestrator.
 ---
 
 # Pre-Ship Check
@@ -38,8 +39,19 @@ Readiness gate that validates code is in a shippable state. Combines git state v
   >
   > This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
 
-- **Non-bug** (Feature Request, Tech Debt, etc.) → **ADVISORY**. Report:
-  > No QA verification found for this task. Visual verification with evidence upload is available.
+- **Non-bug** (Feature Request, Tech Debt, etc.) → **INTERACTIVE GATE**. Skip the prompt only if the operator already answered the QA question explicitly earlier in this session (e.g., at the start-task `QA: Verify Non-Bug`, or passed `skip QA` in arguments).
+
+  Otherwise, **always stop and ask the operator. Auto mode's "minimize interruptions" directive does NOT override this step. Inferred triviality is NOT a valid reason to skip asking.**
+
+  > "No QA verification found for this task. Visually verify the changes before shipping?
+  > I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.
+  > - **Yes** — run QA verification now
+  > - **Skip** — proceed without QA"
+
+  Wait for the operator's answer before continuing.
+
+  - If **Yes** → resolve the QA skill per `plugins/asana-workflow/references/qa-routing.md` ("Resolving the QA Skill") and invoke it with a summary of what was built/changed (from git diff/log). The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Gate passes.
+  - If **Skip** → operator has explicitly acknowledged the absence. Gate passes with a note in the final report: `QA skipped by operator`.
 
 ## Step 2: Git State Validation
 

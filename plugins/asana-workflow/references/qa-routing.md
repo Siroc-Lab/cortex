@@ -1,6 +1,6 @@
 # QA Routing Reference
 
-Plugin-level shared reference used by `start-task` (to route QA during a task) and `ship-it` (to offer QA before shipping if none has been recorded). Covers how to resolve which QA skill to invoke and the QA investigate → fix → verify sub-flow.
+Plugin-level shared reference used by `start-task` (to route QA during a task) and `pre-ship-check` (to gate shipping on QA verification). Covers how to resolve which QA skill to invoke and the QA investigate → fix → verify sub-flow.
 
 ---
 
@@ -86,10 +86,10 @@ Wait for the operator's answer before continuing.
 
 If **yes** — resolve the QA skill if not already resolved (`QA: Resolve`) and invoke it with a summary of what was built/changed. The QA skill verifies the implementation, then posts `✅ QA Verification — Feature Complete` to Asana with evidence.
 
-If **skip** — proceed to ship-it. ship-it will offer one more chance if no QA evidence is found (see ship-it's QA advisory step).
+If **skip** — proceed to ship-it. `pre-ship-check` will offer one more chance if no QA evidence is found at ship time.
 
 ---
 
-## Use by ship-it
+## Use by pre-ship-check
 
-`ship-it` uses the "Resolving the QA Skill" section above when pre-ship-check reports a QA advisory (no QA evidence found for a non-bug task). Same logic, same order — no redefinition.
+`pre-ship-check` uses the "Resolving the QA Skill" section above when its QA verification gate finds no QA evidence for a non-bug task and the operator chooses to run QA. Same logic, same order — no redefinition.

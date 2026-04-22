@@ -249,4 +249,4 @@ Triggered when the user says "park this", "I'm blocked", "pause task", or simila
 - **`references/asana-patterns.md`** — URL formats, API fields, section moves, comment posting
 - **`references/git-workflow.md`** — Existing work detection, branch creation, naming convention
 - **`references/checkpoints.md`** — Checkpoint file format, pause flow, resume flow, edge cases
-- **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and the QA sub-flow (plugin-level shared reference with ship-it)
+- **`plugins/asana-workflow/references/qa-routing.md`** — QA skill resolution and the QA sub-flow (plugin-level shared reference with pre-ship-check)
