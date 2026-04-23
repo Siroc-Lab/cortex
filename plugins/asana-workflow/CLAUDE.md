@@ -84,14 +84,14 @@ Skills NOT bundled — must be installed separately:
 2. Add the skill to `.claude-plugin/plugin.json` under `"skills"`
 3. Add optional `references/` files and reference them from SKILL.md
 4. **Update this CLAUDE.md** — add the skill to the Plugin Structure diagram above, and add a Skill Relationships entry if it invokes or hands off to other skills
-5. **Update the repo `README.md`** if the skill is user-facing — add a row to the asana-workflow skill table
+5. **Update the repo `README.md`** if the skill is user-invokable (has a slash command or responds to user trigger phrases directly) — add a row to the asana-workflow skill table. Internal helpers like `asana-api` or `git-check` stay out of the user-facing table.
 
 ### Modifying an existing skill
 
 - SKILL.md body is loaded into context on every trigger — keep it focused
 - Use `references/` for large docs (>~100 lines) to avoid bloating context
 - Test with `/skill-creator:skill-creator` for iterative refinement
-- **Update the Skill Relationships section above** if the change moves responsibilities between skills, adds a new dependency or handoff, or reroutes a call path — the diagram is the canonical map of cross-skill interactions and drifts easily when one skill changes alone
+- **Update the Skill Relationships section above** if the change adds, removes, or reroutes a cross-skill interaction (a new dependency, a dropped handoff, a moved responsibility) — the diagram is the canonical map and drifts easily when one skill changes alone
 
 ### Testing locally
 ```bash
