@@ -149,6 +149,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh skip <gid> "<step>
 
 A skipped row is terminal. Resume skips over it the same as `[x]`/completed rows.
 
+**Revising a completed step.** Calling `complete` on an already-completed row overwrites it and increments `Attempts` (providing an audit trail). Use this when the operator revises a decision mid-flow — e.g., at Step 10 they pick `brainstorm`, interrupt the sub-skill, and switch to `feature-dev`. Also update any affected frontmatter via `set` (e.g., `checkpoint.sh set <gid> workflow feature-dev`).
+
 The `<step>` argument is the exact label from the Steps table (e.g., `"3. Validate Sprint-Readiness"`, `"QA: Investigate Bug"`). Comments and reasons must not contain `|` or newlines — the script rejects those to preserve the table.
 
 ### Comment Content Per Step
