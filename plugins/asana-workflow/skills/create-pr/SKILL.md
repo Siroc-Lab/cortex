@@ -80,7 +80,14 @@ To update, use `gh pr edit` (see Updating Existing PRs below).
 
 Format: `TASK-ID :: Description`
 
-The task ID prefix is **mandatory** when an Asana task is linked. Extract it from the Asana task's custom field or the task name prefix (e.g., `MT251-168`, `BI-176`, `PD253-364`). If the task name starts with a ticket ID pattern (`XX-NNN` or `XXX-NNN` or `XXNNN-NNN`), use that as the prefix.
+The task ID prefix is **mandatory** when an Asana task is linked. Resolve it in this priority order:
+
+1. **Threaded context** — if the caller (ship-it, log-task, start-task) passed a Task ID explicitly, use it verbatim. Do not re-fetch.
+2. **Asana custom field** — fetch the task and read the project ID custom field.
+3. **Asana task name prefix** — if the task name starts with a ticket ID pattern (`XX-NNN`, `XXX-NNN`, or `XXNNN-NNN`, e.g., `MT251-168`, `BI-176`, `PD253-364`), use that.
+4. **Branch name prefix** — if the current branch is `<TASK-ID>/<slug>` (the shape created by `log-task`/`start-task`), extract the TASK-ID segment before the first `/`. This is the fallback when `ship-it` runs in a session later than `log-task` and Asana context has not been re-threaded.
+
+Only skip the `TASK-ID :: ` prefix if none of the above resolves a valid ID, or the caller explicitly signalled no ID is available.
 
 Examples:
 - `MT251-168 :: Hide Manage Subscription button`

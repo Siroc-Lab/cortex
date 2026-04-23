@@ -46,9 +46,16 @@ When the session began with `start-task`, the following context is already in th
 
 Reuse all of this. Do not ask the user for the Asana task URL again.
 
+### From log-task (if used)
+
+When the session began — or continued — with `log-task` (Fix Done variant), the handoff payload from log-task Step 7b-6 is already in the conversation:
+- **Task GID**, **Task URL**, **Task ID** (e.g., `MT251-182`), **Task title**, **Sprint project GID**, **Branch name**
+
+Reuse all of this when invoking `create-pr`. In particular, pass the **Task ID** and **Task title** through explicitly so the PR title is formatted as `<TASK-ID> :: <description>` without re-fetching from Asana. If log-task signalled that the Task ID could not be resolved, honour its fallback instruction — do not substitute a guess.
+
 ### From conversation history
 
-If `start-task` was not used but an Asana URL appeared earlier in the conversation, extract the task GID from it. Only prompt for the URL if there is genuinely no Asana context available.
+If neither `start-task` nor `log-task` was used but an Asana URL appeared earlier in the conversation, extract the task GID from it. Only prompt for the URL if there is genuinely no Asana context available.
 
 ## The Flow
 

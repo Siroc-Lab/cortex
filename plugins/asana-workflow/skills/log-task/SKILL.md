@@ -223,9 +223,15 @@ Follow the worktree creation and file copy steps in `references/worktree-flow.md
 
 #### 7b-6. Invoke ship-it
 
-Thread the Asana task GID and URL so `ship-it` can skip re-asking:
+Thread the full Asana task context so `ship-it` / `create-pr` can skip re-asking and build the correct PR title (`<TASK-ID> :: <description>`):
 - Task GID: `<task_gid>`
 - Task URL: `https://app.asana.com/0/<active_sprint_gid>/<task_gid>`
+- Task ID: `<task_id>` — the project ID prefix (e.g., `MT251-182`) resolved in Step 6d; required for PR title formatting
+- Task title: `<task_title>` — used as the PR title description
+- Sprint project GID: `<active_sprint_gid>`
+- Branch name: `<task_id>/<slug>` — already created in 7b-3
+
+If the task ID could not be resolved in Step 6d (all retries failed), explicitly tell `ship-it` that the PR title must fall back to the type-prefixed branch slug (`fix/…`, `feat/…`) with no `TASK-ID :: ` prefix — do not let `create-pr` guess.
 
 ---
 
