@@ -1,0 +1,49 @@
+{
+  "skill_name": "start-task",
+  "focus": "checkpoint behavior",
+  "notes": "Initial eval set targets the checkpoint system specifically — whether the skill correctly initializes the checkpoint, updates rows around every step (including trivial ones per the non-negotiable rule), uses the right semantic labels, marks skipped rows correctly, respects resume semantics, and cleans up on ship. Baselines (without-skill) are skipped — the checkpoint is a feature of the skill, so there is no meaningful baseline behavior to compare against. Running these for real requires test Asana tasks in a real project (hits the Asana API and creates a real branch + draft PR); operator should designate which tasks are safe to use.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "fast-mode-non-bug-checkpoint",
+      "prompt": "/start-task <asana-url> fast — it's a small docs update, just implement and ship",
+      "expected_output": "Skill initializes the checkpoint at ~/.claude/asana-workflow/checkpoints/<task-gid>.md via checkpoint.sh init. Fills frontmatter as work progresses: task_id after Step 2, branch + base_branch after Step 7, workflow='fast' after Step 10. All numbered steps (0, 1, 2, 3, 4, 5, 6, 6a, 6b, 7, 8, 9a, 9b, 10, 12) are marked Completed=[x] / State=completed with accurate Comments — no blank rows. All five QA rows (QA: Resolve, QA: Investigate Bug, QA: Fix Bug, QA: Verify Fix, QA: Verify Non-Bug) are marked State=skipped with Comment containing 'fast mode'. On successful Step 12 completion, the checkpoint file is deleted.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "bug-task-full-qa-loop",
+      "prompt": "/start-task <asana-url> — a bug in the login flow that I need to fix",
+      "expected_output": "Skill initializes the checkpoint. Detects Category=Bug in Step 2 summary. At Step 10: checkpoint row marked completed with Comment like 'fix-bug' or the chosen workflow. Enters the bug branch of Step 11 (QA Sub-flow). QA: Resolve marked completed with the resolved skill name (web-qa, mobile-qa, or none). If resolved skill is not 'none': QA: Investigate Bug marked completed (Comment: 'Confirmed' or 'Cannot reproduce'), QA: Fix Bug marked completed (Comment: 'Fix ready'), QA: Verify Fix marked completed (Comment: 'Pass'). QA: Verify Non-Bug marked State=skipped with Comment 'bug task'. Step 12 ships, checkpoint deleted.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "trivial-steps-discipline",
+      "prompt": "/start-task <asana-url> — standard feature task, URL already provided",
+      "expected_output": "Skill follows the non-negotiable discipline rule: every numbered step in the flow is recorded via checkpoint.sh, even the trivial ones. Specifically, Step 1 (Get Task URL) is mechanically trivial because the URL is already in $ARGUMENTS — but the model still calls checkpoint.sh complete for Step 1 with a Comment like 'GID: <task-gid>' or 'trivial — already present' and auto=yes. Step 0 (Dependency Check) is also marked explicitly. After the run, there are no blank rows (Completed=[ ] with State=—) among steps the flow has advanced past. The Attempts column shows 1 for each completed step.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "resume-from-paused-checkpoint",
+      "prompt": "/start-task <asana-url> — continuing from yesterday, I paused at the QA verify step",
+      "expected_output": "Skill checks for an existing checkpoint before any API calls. Finds it at ~/.claude/asana-workflow/checkpoints/<task-gid>.md. Reads the Steps table. Resume Flow: identifies the first non-terminal row (Completed=[ ] AND State!=skipped). All rows with Completed=[x] are skipped; all rows with State=skipped are skipped. Does NOT re-run already-completed steps (no re-fetching of task details, no re-creating the branch, no re-posting the start comment). If the target row has State=blocked, fetches Asana stories posted after last_updated, presents any new comments, and posts a resume comment. Continues the flow from the target row.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "qa-skill-none-bug-task",
+      "prompt": "/start-task <asana-url> — bug task on our CLI tool; CLAUDE.md has qa-skill: none",
+      "expected_output": "Skill routes as Bug, enters QA Sub-flow. QA: Resolve marked completed with Comment 'none' (from CLAUDE.md declaration). QA: Investigate Bug marked State=skipped with Comment 'qa-skill=none' (no visual investigation possible). QA: Fix Bug STILL runs with ticket-only context and is marked completed. QA: Verify Fix marked State=skipped with Comment 'qa-skill=none' (no visual verification possible). QA: Verify Non-Bug marked State=skipped with Comment 'bug task'. Step 12 ships, checkpoint deleted.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "revise-workflow-mid-flow",
+      "prompt": "/start-task <asana-url> — non-bug task. At Step 10, pick brainstorm; then interrupt before brainstorming produces much and switch to feature-dev.",
+      "expected_output": "At Step 10, first invocation: checkpoint row shows Completed=[x], Comment='brainstorm', Attempts=1, State=completed; frontmatter workflow='brainstorm'. Operator revises. Skill calls checkpoint.sh complete again on Step 10 with Comment reflecting the revision (e.g., 'feature-dev'), Attempts=2, State=completed. Frontmatter updated via checkpoint.sh set workflow feature-dev. Skill then invokes feature-dev:feature-dev (not superpowers:brainstorming). Downstream steps (Step 11 QA Sub-flow, Step 12 Ship It) proceed normally with the revised workflow_choice.",
+      "files": []
+    }
+  ]
+}
