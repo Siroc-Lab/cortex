@@ -2,6 +2,8 @@
 
 Plugin-level shared reference used by `start-task` (to route QA during a task) and `pre-ship-check` (to gate shipping on QA verification). Covers how to resolve which QA skill to invoke and the QA investigate → fix → verify sub-flow.
 
+**Scope note.** This file is a **how-to reference** — it documents the resolve logic and sub-step invocations. **Enforcement** — the exact operator prompts, the HARD GATE language, anti-patterns, and "must invoke not infer" rules — lives in the consuming skills' always-loaded context: `start-task/SKILL.md` Step 11 and `pre-ship-check/SKILL.md` Step 1. If you're tempted to substitute simpler-looking behavior at the invocation site, stop and re-read those Step sections; this file does not have the authority to relax their rules.
+
 ---
 
 ## Resolving the QA Skill

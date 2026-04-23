@@ -43,9 +43,9 @@ Readiness gate that validates code is in a shippable state. Combines git state v
   >
   > This gate cannot be overridden. A bug fix without runtime verification evidence is not shippable.
 
-- **Non-bug** (Feature Request, Tech Debt, etc.) → **INTERACTIVE GATE**. Skip the prompt only if the operator already answered the QA question explicitly earlier in this session (e.g., at the start-task `QA: Verify Non-Bug`, or passed `skip QA` in arguments).
+- **Non-bug** (Feature Request, Tech Debt, etc.) → **INTERACTIVE GATE**. Skip the prompt only if the operator's answer earlier in this session was a **direct response** to the QA verification prompt — either the start-task `QA: Verify Non-Bug` prompt ("Run QA verification? [yes / skip]") or this step's own prompt — OR a literal `skip QA` / `run QA` utterance at any point. An affirmative response to a different question (e.g., ship approval, a generic checklist, "does this look good?") does **NOT** count as an answer to the QA question. When the prior answer is ambiguous, re-ask.
 
-  Otherwise, **always stop and ask the operator. Auto mode's "minimize interruptions" directive does NOT override this step. Inferred triviality is NOT a valid reason to skip asking.**
+  Otherwise, **always stop and ask the operator. Auto mode's "minimize interruptions" directive does NOT override this step. Inferred triviality is NOT a valid reason to skip asking. Do not generate a static self-certification checklist in place of this prompt.**
 
   > "No QA verification found for this task. Visually verify the changes before shipping?
   > I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.

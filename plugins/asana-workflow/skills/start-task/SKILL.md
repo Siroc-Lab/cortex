@@ -176,9 +176,39 @@ The branch is already created and checked out — the downstream skill works on 
 
 ### Step 11: QA Sub-flow
 
-Run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally). For non-bug tasks this runs after the development workflow returns; for bug tasks it runs immediately after routing.
+Run the QA sub-flow for the task's category. Resolve the QA skill (web-qa / mobile-qa / none) per **`plugins/asana-workflow/references/qa-routing.md`** → "Resolving the QA Skill". That reference is the shared resolve logic; this section is the enforcement contract.
 
 **In fast mode** the sub-flow is skipped entirely. Mark every QA row in the checkpoint as `skipped` with reason `fast mode` (via `checkpoint.sh skip`).
+
+#### Bug path — invoke, don't infer
+
+The bug sub-flow (`QA: Resolve` → `QA: Investigate Bug` → `QA: Fix Bug` → `QA: Verify Fix`) runs only by **invoking the respective skills**. Runtime evidence from those invocations is what the sub-flow produces. Do not substitute reasoning for invocation:
+
+- ❌ "I read the code and see the bug" — invoke the QA skill in investigate mode for reproduction evidence.
+- ❌ Inlining a fix directly — invoke `fix-bug` so it passes through systematic-debugging + TDD.
+- ❌ "Tests pass so the fix works" — invoke the QA skill in verify mode; runtime replay of the original repro is the evidence.
+
+No runtime evidence = the row is not complete. See `references/qa-routing.md` for the exact invocation sequence of each sub-step.
+
+#### Non-bug path — exact prompt, no substitution
+
+After the development workflow returns, ask the operator **using this exact wording**. Do not rephrase, do not inline into another question, do not substitute an approval prompt:
+
+> "Implementation is complete. The changes can be visually verified before shipping — I'll build, deploy to the simulator/browser, and check the affected flows. A screenshot or video will be uploaded to the Asana task as proof of completion.
+>
+> Run QA verification? [yes / skip]"
+
+Wait for the operator's answer. This is a **HARD GATE** — auto mode's "minimize interruptions" directive does NOT override. Skip asking only if the operator passed `skip QA` in start-task arguments or said "skip QA" / "run QA" earlier in the conversation as a direct utterance.
+
+Anti-patterns:
+
+- ❌ "Do you approve this for ship?" — this is a verification offer, not an approval question. A "yes" to ship-approval does NOT count as a "yes" to run QA.
+- ❌ Self-generated static checklist ("Package.resolved has correct versions", "Build succeeded", "Tests pass") substituting for the QA skill invocation. These are pre-conditions the model already knows; they are not visual verification evidence.
+- ❌ Inferring a "yes" from a prior answer to any different question. If the prior answer wasn't to this exact prompt (or to `skip QA` / `run QA`), re-ask.
+
+If **yes** → invoke the resolved QA skill with a summary of what was built. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Only the QA skill's actual posting counts as evidence; a model-generated claim that QA passed does not.
+
+If **skip** → proceed to Step 12. `pre-ship-check` will offer one more chance at ship time if no QA evidence is found on Asana.
 
 ### Step 12: Ship It
 
