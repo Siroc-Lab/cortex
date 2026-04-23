@@ -12,6 +12,8 @@ Central repository for SIROC's AI context: skills, agents, hooks, and orchestrat
 
 End-to-end Asana-driven development workflow: from ticket to shipped PR with automated task tracking, git management, and team communication.
 
+> For the complete `start-task` lifecycle map (init, checkpointing, routing, QA sub-flow, pause/resume, ship), see [FLOW.md](plugins/asana-workflow/skills/start-task/FLOW.md).
+
 **Skills included:**
 
 | Skill | Description |
