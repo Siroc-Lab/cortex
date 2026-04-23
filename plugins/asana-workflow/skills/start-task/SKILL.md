@@ -190,6 +190,8 @@ The bug sub-flow (`QA: Resolve` → `QA: Investigate Bug` → `QA: Fix Bug` → 
 
 No runtime evidence = the row is not complete. See `references/qa-routing.md` for the exact invocation sequence of each sub-step.
 
+**When `QA: Verify Fix` passes — proceed to Step 12.** Step 11 is only done when execution has advanced; do not end the session after the QA loop completes.
+
 #### Non-bug path — exact prompt, no substitution
 
 After the development workflow returns, ask the operator **using this exact wording**. Do not rephrase, do not inline into another question, do not substitute an approval prompt:
@@ -206,7 +208,7 @@ Anti-patterns:
 - ❌ Self-generated static checklist ("Package.resolved has correct versions", "Build succeeded", "Tests pass") substituting for the QA skill invocation. These are pre-conditions the model already knows; they are not visual verification evidence.
 - ❌ Inferring a "yes" from a prior answer to any different question. If the prior answer wasn't to this exact prompt (or to `skip QA` / `run QA`), re-ask.
 
-If **yes** → invoke the resolved QA skill with a summary of what was built. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Only the QA skill's actual posting counts as evidence; a model-generated claim that QA passed does not.
+If **yes** → invoke the resolved QA skill with a summary of what was built. The QA skill posts `✅ QA Verification — Feature Complete` to Asana with evidence. Only the QA skill's actual posting counts as evidence; a model-generated claim that QA passed does not. **After the QA skill returns with a posted Asana comment — proceed to Step 12.** Do not end the session at Step 11.
 
 If **skip** → proceed to Step 12. `pre-ship-check` will offer one more chance at ship time if no QA evidence is found on Asana.
 
