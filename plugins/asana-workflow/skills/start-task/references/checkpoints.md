@@ -2,13 +2,15 @@
 
 Every `start-task` run tracks progress in a checkpoint file so work can be paused and resumed without losing context. The checkpoint is initialized on entry, updated around every step, and deleted after a successful ship.
 
+**All writes go through the helper script** at `${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh` (equivalently `plugins/asana-workflow/skills/start-task/scripts/checkpoint.sh` when the plugin is local). Do not use Edit/Write on checkpoint files directly — the script keeps the format consistent and minimizes conversation noise (one short Bash command per update instead of a full diff). The file format below still applies; the script produces exactly this layout.
+
 ---
 
 ## File Location
 
-**Path:** `.claude/checkpoints/<task-gid>.md`
+**Path:** `~/.claude/asana-workflow/checkpoints/<task-gid>.md`
 
-Use the Asana task GID (numeric) as the filename — available from the URL before any API call. Create the directory on first use: `mkdir -p .claude/checkpoints/`. Ensure `.claude/checkpoints/` is in `.gitignore` — these are local-only state files and must not be committed.
+The task GID (numeric) comes from the URL — available before any API call. The script creates the directory on first use.
 
 **Never overwrite an existing checkpoint on initialization.** If the file exists, work was already started — load it and resume.
 
@@ -38,7 +40,7 @@ Six-column markdown table tracking every step of the workflow.
 | Column | Values | Description |
 |--------|--------|-------------|
 | **Step** | Text | Step number and name |
-| **Completed** | `[ ]` / `[x]` / `[~]` | `[x]` done, `[~]` skipped as not-applicable, `[ ]` still open |
+| **Completed** | `[ ]` / `[x]` | `[x]` only when `State = completed`; `[ ]` for every other state. Visual progress indicator. |
 | **Comment** | Text | Key data captured or what happened |
 | **Attempts** | Integer | How many times this step has been attempted (starts at 0) |
 | **State** | `—` / `in_progress` / `completed` / `blocked` / `skipped` | Current execution state |
@@ -86,7 +88,7 @@ last_updated: "<iso8601>"
 ## Notes
 ```
 
-The `QA:` rows are only exercised when their preconditions apply (bug vs non-bug, resolved QA skill != `none`, not in fast mode). Prefer marking non-applicable rows `[~]` / `skipped` with a reason at the time they would have run, rather than leaving them as `[ ]` / `—`.
+The `QA:` rows are only exercised when their preconditions apply (bug vs non-bug, resolved QA skill != `none`, not in fast mode). Prefer marking non-applicable rows with `State = skipped` and a reason at the time they would have run, rather than leaving them as `State = —`.
 
 ---
 
@@ -98,50 +100,56 @@ The `QA:` rows are only exercised when their preconditions apply (bug vs non-bug
 
 2. **Check for an existing checkpoint:**
    ```bash
-   ls .claude/checkpoints/<task-gid>.md 2>/dev/null
+   ls ~/.claude/asana-workflow/checkpoints/<task-gid>.md 2>/dev/null
    ```
 
 3. **If checkpoint found** → this is a resume. Go to **Resume Flow** below.
 
-4. **If no checkpoint** → create it now:
+4. **If no checkpoint** → create it via the helper:
    ```bash
-   mkdir -p .claude/checkpoints/
+   ${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh init <task-gid> <asana-url>
    ```
-   Write the template above with `task_gid`, `asana_url`, `created_at`, `last_updated` filled in. All steps: `[ ]`, state `—`, attempts `0`. Add `.claude/checkpoints/` to `.gitignore` if not already present.
+   The script creates `~/.claude/asana-workflow/checkpoints/` if needed and writes the template with `task_gid`, `asana_url`, `created_at`, `last_updated` pre-filled. No `.gitignore` entry is needed (the file lives outside the repo).
 
 ---
 
 ## Step Updates
 
-**After every step, update the checkpoint immediately. This is not optional.**
+**After every step, update the checkpoint immediately. This is not optional.** All updates go through the helper script — do not Edit/Write the file directly.
+
+**Non-negotiable:** the script must be called for every numbered step in the flow, including trivial ones. If Step N didn't do anything observable (e.g., Step 1 when the URL was already in `$ARGUMENTS`), mark it complete with comment `trivial — already present` and `auto=yes`. Never leave a step as `[ ]` / `—` after advancing past it. A blank row is not "the step was implicit"; it is a checkpoint gap that will cause incorrect behavior on resume.
+
+Abbreviate the helper path as `CP=${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh` mentally; the examples below use the full path for clarity.
 
 ### Update Pattern
 
-When a step **starts**:
-- Set `State` → `in_progress`
-- Increment `Attempts` by 1
-- Update `last_updated` to now
+When a step **starts** (`State → in_progress`, `Attempts += 1`, `last_updated` refreshed):
 
-When a step **completes successfully**:
-- Set `Completed` → `[x]`
-- Set `State` → `completed`
-- Set `Comment` → key data (see table below)
-- Set `Auto` → `[x]` if no user input was needed; `[ ]` if user approved/decided something
-- Update `last_updated` to now
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh start <gid> "<step>"
+```
 
-When a step is **blocked** (cannot complete — waiting on input, external dependency, or a failure that halts progress):
-- Set `State` → `blocked`
-- Set `Comment` → what is blocking
-- Update `last_updated` to now
-- Proceed to **Pause Flow** below.
+When a step **completes successfully** (`Completed → [x]`, `State → completed`, `Comment` set, `last_updated` refreshed). Add a 4th arg `no` if the step required operator input (so `Auto → [ ]`), else omit (defaults to `yes`):
 
-When a step does **not apply** in this run (wrong category, `qa-skill=none`, fast mode, operator opted out):
-- Set `Completed` → `[~]`
-- Set `State` → `skipped`
-- Set `Comment` → reason (e.g., `fast mode`, `non-bug task`, `qa-skill=none`, `operator skipped`)
-- Update `last_updated` to now
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh complete <gid> "<step>" "<comment>" [yes|no]
+```
 
-A `[~]` row is terminal. Resume skips over it the same as `[x]`.
+When a step is **blocked** (cannot complete — waiting on input, external dependency, or a failure that halts progress). Then proceed to **Pause Flow** below:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh block <gid> "<step>" "<reason>"
+```
+
+When a step does **not apply** in this run (wrong category, `qa-skill=none`, fast mode, operator opted out). `Completed → [ ]`, `State → skipped`, `Comment → reason`:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh skip <gid> "<step>" "<reason>"
+```
+
+A skipped row is terminal. Resume skips over it the same as `[x]`/completed rows.
+
+The `<step>` argument is the exact label from the Steps table (e.g., `"3. Validate Sprint-Readiness"`, `"QA: Investigate Bug"`). Comments and reasons must not contain `|` or newlines — the script rejects those to preserve the table.
 
 ### Comment Content Per Step
 
@@ -169,6 +177,12 @@ A `[~]` row is terminal. Resume skips over it the same as `[x]`.
 | 12. Ship It | `Shipped: <pr-url>` |
 
 ### Frontmatter Updates
+
+Use the `set` subcommand — it updates the field and refreshes `last_updated`:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh set <gid> <field> "<value>"
+```
 
 - After Step 2: set `task_id`
 - After Step 7: set `branch` and `base_branch`
@@ -212,7 +226,13 @@ Example draft:
 After approval, post via the `asana-api` skill. Include the @mention of the blocking person. See `asana-patterns.md` → "Posting a Blocking Question (Pause)" for the format.
 
 **5. Update checkpoint**
-Set the current step's `State` → `blocked` (if not already), `Comment` → who is blocking. Append a `## Notes` entry with the blocking question and who to follow up with.
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh block <gid> "<step>" "<who is blocking>"
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh append-note <gid> "<blocking question + who to follow up with>"
+```
+
+The `block` call sets `State → blocked` and `Comment → reason`; `append-note` adds a block to the `## Notes` section.
 
 **6. Push branch**
 Push the WIP commit to remote.
@@ -232,7 +252,7 @@ Triggered automatically during Initialization when a checkpoint file is found. A
 
 ### Steps
 
-**1. Load checkpoint** — find the first row where `Completed = [ ]`. That is where execution resumes. Skip all `[x]` and `[~]` rows entirely.
+**1. Load checkpoint** — find the first row that is not terminal. Terminal rows are `Completed = [x]` (completed) or `State = skipped` (non-applicable). Skip terminal rows entirely; resume on the first row that has `Completed = [ ]` AND `State != skipped`.
 
 **2. Present current state** — render the Steps table so the operator sees what's done, what's remaining, and any blocked row.
 
@@ -256,10 +276,10 @@ See `asana-patterns.md` → "Posting a Resume Comment".
 
 ## Lifecycle End
 
-After Step 12 (Ship It) completes successfully, **delete the checkpoint file**:
+After Step 12 (Ship It) completes successfully, **delete the checkpoint file** via the helper:
 
 ```bash
-rm .claude/checkpoints/<task-gid>.md
+${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh delete <task-gid>
 ```
 
 The checkpoint's lifetime is one start → develop → ship pass. Once shipped, the Asana task status moves to "In Review" and the PR is ready for review — any further work on the branch (code-review fixes, reviewer feedback, follow-up commits) is **out of scope** for start-task and is not tracked by this checkpoint. It happens through git + the PR review thread, or via a different skill.

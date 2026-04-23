@@ -7,6 +7,7 @@ asana-workflow/
 ├── CLAUDE.md              ← you are here
 ├── .claude-plugin/
 │   └── plugin.json        ← plugin manifest (name, version, skills array)
+├── references/            ← plugin-wide shared references (board-resolution, qa-routing)
 └── skills/
     ├── asana-api/         ← Asana API operations (bundled)
     ├── create-pr/         ← PR creation (bundled)
@@ -18,6 +19,7 @@ asana-workflow/
     ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, mobile-mcp)
     ├── ship-it/           ← Shipping orchestrator (bundled)
     ├── start-task/        ← Entry point for dev workflow (bundled)
+    │   └── scripts/       ← skill-local helpers (e.g., checkpoint.sh — checkpoint file I/O)
     └── work-summary/      ← Session summary (bundled)
 ```
 

@@ -45,7 +45,7 @@ Fast mode runs the full lifecycle (Steps 0–9 and Step 12) unchanged but replac
 
 ## The Flow
 
-**Before Step 0:** Initialize (or resume) the checkpoint per **`references/checkpoints.md`** → "Initialization". Every run writes per-step progress to `.claude/checkpoints/<task-gid>.md` so work can be resumed after any interruption.
+**Before Step 0:** Initialize (or resume) the checkpoint by running `${CLAUDE_PLUGIN_ROOT}/skills/start-task/scripts/checkpoint.sh init <task-gid> <asana-url>` (or load the existing file if one exists — see **`references/checkpoints.md`** → "Initialization" and "Resume Flow"). All checkpoint writes throughout the flow go through that helper script — do not Edit/Write the file directly.
 
 ### Step 0: Check External Skill Dependencies
 
@@ -178,7 +178,7 @@ The branch is already created and checked out — the downstream skill works on 
 
 Run the QA sub-flow per **`plugins/asana-workflow/references/qa-routing.md`** (bug: verify → fix → verify loop; non-bug: hard-gated operator prompt; `qa-skill=none` handled internally). For non-bug tasks this runs after the development workflow returns; for bug tasks it runs immediately after routing.
 
-**In fast mode** the sub-flow is skipped entirely. Mark every QA row in the checkpoint as `[~]` / `skipped` / `fast mode`.
+**In fast mode** the sub-flow is skipped entirely. Mark every QA row in the checkpoint as `skipped` with reason `fast mode` (via `checkpoint.sh skip`).
 
 ### Step 12: Ship It
 
@@ -198,7 +198,7 @@ Invoke `ship-it`. The following context is already in this session — pass it t
 
 `ship-it` will run pre-ship-check, generate a work summary, promote the draft PR to ready, move the Asana task to "In Review", and post a completion comment.
 
-After `ship-it` returns successfully, delete `.claude/checkpoints/<task-gid>.md`. Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** → "Lifecycle End".
+After `ship-it` returns successfully, delete `~/.claude/asana-workflow/checkpoints/<task-gid>.md` (via `checkpoint.sh delete <gid>`). Post-ship work (code-review fixes, follow-up commits) is out of scope for this checkpoint — see **`references/checkpoints.md`** → "Lifecycle End".
 
 ## Pause Flow
 
