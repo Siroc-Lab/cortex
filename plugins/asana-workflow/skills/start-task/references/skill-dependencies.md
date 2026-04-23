@@ -37,8 +37,8 @@ Before routing in Step 10, verify the required skill is available by checking if
 To check installed plugins:
 
 ```bash
-# List installed plugins
-cat ~/.claude/plugins/installed_plugins.json | grep -E '"feature-dev|superpowers"'
+# List installed plugins — match JSON keys like "feature-dev@..." or "superpowers@..."
+cat ~/.claude/plugins/installed_plugins.json | grep -E '"feature-dev|"superpowers'
 ```
 
 ## Dependency Check at Start-Task Launch (Step 0)
