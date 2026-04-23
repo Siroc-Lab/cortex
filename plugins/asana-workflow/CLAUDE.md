@@ -13,13 +13,14 @@ asana-workflow/
     ├── create-pr/         ← PR creation (bundled)
     ├── fix-bug/           ← Bug-fix lifecycle orchestrator (bundled)
     ├── git-check/         ← Git state validation (bundled)
-    ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
     ├── generic-qa/        ← Shared QA process & references (not a skill — used by web-qa, mobile-qa)
-    ├── web-qa/            ← Web QA investigation & verification (bundled)
+    ├── log-task/          ← Create Asana task from conversation-discovered work (bundled)
     ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, mobile-mcp)
+    ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
     ├── ship-it/           ← Shipping orchestrator (bundled)
     ├── start-task/        ← Entry point for dev workflow (bundled)
     │   └── scripts/       ← skill-local helpers (e.g., checkpoint.sh — checkpoint file I/O)
+    ├── web-qa/            ← Web QA investigation & verification (bundled)
     └── work-summary/      ← Session summary (bundled)
 ```
 
@@ -48,6 +49,10 @@ ship-it
 pre-ship-check
   ├── git-check                 (git state)
   └── web-qa / mobile-qa        (QA verification prompt on non-bug tasks; resolution per plugin references/qa-routing.md)
+
+log-task
+  ├── asana-api          (create task, set custom fields, add to projects)
+  └── → hands off to start-task (Plan Only) or ship-it (Fix Done) depending on whether the work was planned vs already done
 ```
 
 generic-qa (shared markdown, not a skill)
