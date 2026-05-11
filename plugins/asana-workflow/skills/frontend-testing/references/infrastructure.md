@@ -1,67 +1,32 @@
 # Frontend Testing Infrastructure
 
-Runner-specific coverage configs, CI pipeline patterns, and tooling for frontend projects. Extends `../../generic-testing/references/infrastructure.md` for universal infrastructure principles.
+Frontend-specific coverage and CI guidance. Extends `../../generic-testing/references/infrastructure.md` for the universal principles.
 
-## Coverage Setup
+Before applying any of the snippets below, read the project's existing runner config and CI workflows. Adapt — don't paste.
 
-### Jest
+## Coverage
 
-```json
-{
-  "coverageProvider": "v8",
-  "collectCoverageFrom": [
-    "src/**/*.{ts,tsx}",
-    "!src/**/*.d.ts",
-    "!src/**/index.{ts,tsx}",
-    "!src/**/*.stories.{ts,tsx}"
-  ],
-  "coverageThreshold": {
-    "global": {
-      "branches": 70,
-      "functions": 70,
-      "lines": 70,
-      "statements": 70
-    }
-  }
-}
-```
+### Principles
 
-### Vitest
+- **Provider:** prefer the runner's V8 provider over Babel/Istanbul instrumentation — it's faster and more accurate for modern bundled code. Use whatever the runner already configures unless you have a reason to switch.
+- **Include paths:** mirror the project's actual source layout (`src/`, `app/`, `packages/*/src`, `lib/`, etc.). Inspect the repo, don't assume.
+- **Exclude:** type declarations (`*.d.ts`), barrel files (`index.*` re-exports), stories, generated code, config files, and the test files themselves.
+- **Thresholds:** start around 70% on a greenfield project. On an existing codebase, set thresholds at the current level and ratchet up — never set thresholds that fail the build on day one.
 
-```typescript
-export default defineConfig({
-  test: {
-    coverage: {
-      provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['**/*.d.ts', '**/index.{ts,tsx}', '**/*.stories.{ts,tsx}'],
-      thresholds: {
-        branches: 70,
-        functions: 70,
-        lines: 70,
-        statements: 70
-      }
-    }
-  }
-})
-```
+### Where to put thresholds
 
-### Notes
-
-- **v8 provider** preferred over babel/istanbul — faster, more accurate for modern code
-- **Exclude:** type definitions, barrel exports, stories, generated code, config files
-- Adjust thresholds per project maturity — 70% is a starting point
+Most runners support per-directory overrides. Push higher thresholds (90%+) on critical paths (auth, payments, data integrity) and accept lower ones on UI surface or glue code. A single global number hides where the suite is weak.
 
 ## CI Pipeline (Frontend)
 
 ### Minimum viable test job
 
 ```yaml
-# Pseudo — adapt to project's CI system
+# Pseudo — adapt to the project's CI system and package manager
 steps:
   - Install dependencies (cached by lockfile hash)
-  - Type check (tsc --noEmit)
-  - Lint (eslint / biome)
+  - Type check
+  - Lint
   - Unit + integration tests with coverage
   - Upload coverage report
 ```
@@ -70,18 +35,18 @@ Fail on any step. No `continue-on-error` for tests.
 
 ### E2E job (separate)
 
-E2E needs browser binaries (Playwright/Cypress) and possibly a running dev server or test backend. Run as a separate CI job:
+E2E typically needs browser binaries and possibly a running dev server or test backend. Run it as a separate job:
 
 - Install browser binaries (cached)
-- Start dev server or use a test environment
-- Run E2E suite
+- Start the dev server or point at a test environment
+- Run the E2E suite
 - Upload traces/screenshots on failure
 
 ### PR gates
 
 | Gate | Required | Advisory |
 |---|---|---|
-| Type check (`tsc`) | Yes | — |
+| Type check | Yes | — |
 | Lint | Yes | — |
 | Unit/integration tests | Yes | — |
 | Coverage threshold | Yes | — |

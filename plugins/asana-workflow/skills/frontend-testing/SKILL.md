@@ -5,8 +5,8 @@ description: >
   Use when writing, reviewing, or improving tests in a frontend project — triggers include "write tests",
   "add tests", "test this component", "improve test coverage", "/frontend-testing", or any request to create
   or fix frontend tests. Also triggered when TDD is active in a frontend codebase to provide the testing
-  context and patterns. Works with any frontend framework (React, SolidJS, Vue, Svelte) and test runner
-  (Jest, Vitest, Playwright, Cypress).
+  context and patterns. Stack-agnostic: detect the project's framework, runner, and conventions before
+  writing.
 ---
 
 # Frontend Testing
@@ -23,13 +23,13 @@ Read and follow `process.md` for frontend-specific patterns: component testing, 
 
 ## Before Writing Any Test
 
-1. **Detect the stack** — read `references/stack-detection.md` and run the detection steps. Know the runner, framework, test utils, coverage tool, and file conventions before writing a single line.
-2. **Match existing conventions** — file naming, import style, test structure. Don't introduce a second pattern.
+1. **Detect the stack** — follow `references/stack-detection.md` and inspect the project directly. Don't assume which runner, framework, utilities, or file conventions are in use. If something looks weird or inconsistent, stop and advise before writing.
+2. **Match existing conventions** — file naming, location, import style, test structure. Don't introduce a second pattern.
 
 ## Reference Files
 
 - **`../generic-testing/process.md`** — Universal testing fundamentals (determinism, AAA, behavior over implementation)
 - **`../generic-testing/references/infrastructure.md`** — CI, flake detection, benchmarks, reporting (stack-agnostic)
 - **`process.md`** — Frontend testing patterns (Testing Library, components, hooks, forms, E2E)
-- **`references/stack-detection.md`** — Detect frontend runner, framework, coverage, package manager
-- **`references/infrastructure.md`** — Jest/Vitest coverage configs, frontend CI pipeline
+- **`references/stack-detection.md`** — How to inspect and learn the project's testing setup
+- **`references/infrastructure.md`** — Coverage and CI guidance, adapted to whatever runner the project uses

@@ -1,95 +1,31 @@
 # Frontend Stack Detection
 
-How to detect the testing stack in a frontend project. Run these checks **before** writing any test.
+Before writing any test, learn the project's testing setup by inspecting it directly. Do not assume.
 
-## Detection Order
+## What to read
 
-### 1. Test Runner
+1. **`package.json`** — `dependencies` and `devDependencies` tell you the framework, the runner, and the testing utilities. `scripts.test` (and any sibling scripts like `test:unit`, `test:e2e`, `test:watch`) tell you the exact command to run.
+2. **Runner config in the project root** — `vitest.config.*`, `vite.config.*`, `jest.config.*`, `playwright.config.*`, `cypress.config.*`, or runner settings inside `package.json`. The presence and shape of this file is your source of truth. If multiple runners are configured, the `scripts.test` entry tells you which is canonical.
+3. **An existing test file** — pick a representative one and read it. It shows the import style, helpers, file naming (`.test.*` / `.spec.*` / something else), and where tests live relative to source (co-located, sibling folder, top-level directory). Match what's there.
+4. **CI workflow files** — see what already runs on PRs (lint, type-check, unit, E2E, coverage) so you know what's enforced and what's missing.
 
-Check config files in project root:
+## What to derive (don't pre-list)
 
-| File found | Runner |
-|---|---|
-| `vitest.config.*` or `vite.config.*` with `test` block | Vitest |
-| `jest.config.*` or `"jest"` in package.json | Jest |
-| `playwright.config.*` | Playwright (E2E) |
-| `cypress.config.*` | Cypress (E2E) |
+- Runner and its config
+- Framework
+- Component-testing utilities and any network/mocking layer in use
+- Coverage tool and thresholds, if any
+- The exact command and package manager (read it from `scripts` and the lockfile — don't guess)
+- Test file naming and location conventions
 
-If both Jest and Vitest configs exist, check which one `package.json` scripts reference.
+## When to stop and advise
 
-### 2. Test Utilities
+If any of the following is true, raise it with the user **before** writing tests:
 
-Check `package.json` dependencies:
+- No runner config and no test script — testing isn't set up yet; agree on the stack first.
+- `scripts.test` is broken, points at nothing, or fails on a clean checkout.
+- Two conventions coexist in the codebase (e.g. some files co-located, some in `__tests__/`; some `.test.`, some `.spec.`). Ask which one to follow rather than picking arbitrarily.
+- The test utilities in the project look mismatched with the framework (e.g. a React project with no DOM testing utility installed) — it usually means a missing setup step.
+- No existing tests at all in the area you're about to touch — propose the convention you'll establish and confirm before generating files.
 
-| Package | Provides |
-|---|---|
-| `@testing-library/react` | React component testing |
-| `@solidjs/testing-library` or `solid-testing-library` | SolidJS component testing |
-| `@testing-library/vue` | Vue component testing |
-| `@testing-library/svelte` | Svelte component testing |
-| `@testing-library/dom` | DOM queries (framework-agnostic) |
-| `@testing-library/user-event` | User interaction simulation |
-| `@testing-library/jest-dom` | DOM-specific matchers (toBeInTheDocument, etc.) |
-| `msw` | Network request mocking (Mock Service Worker) |
-
-### 3. Framework
-
-Check `package.json` dependencies:
-
-| Package | Framework |
-|---|---|
-| `next` | Next.js (React) |
-| `react`, `react-dom` | React |
-| `solid-js` | SolidJS |
-| `vue` | Vue |
-| `svelte` | Svelte |
-
-### 4. Coverage
-
-Check test runner config for coverage settings:
-
-| Config | Tool |
-|---|---|
-| Jest `coverageProvider: "v8"` | v8 via Jest |
-| Jest `coverageProvider: "babel"` | Istanbul via Jest |
-| Vitest `coverage.provider: "v8"` | v8 via Vitest |
-| Vitest `coverage.provider: "istanbul"` | Istanbul via Vitest |
-| `nyc` or `c8` in package.json | Standalone coverage |
-
-### 5. Package Manager
-
-| File found | Manager | Run command |
-|---|---|---|
-| `pnpm-lock.yaml` | pnpm | `pnpm test` |
-| `yarn.lock` | yarn | `yarn test` |
-| `package-lock.json` | npm | `npm test` |
-| `bun.lockb` | bun | `bun test` |
-
-### 6. CI Pipeline
-
-Check `.github/workflows/` for test jobs. Note what's already running (lint, test, build, E2E) and what's missing.
-
-### 7. Test File Conventions
-
-Check existing test files for patterns:
-
-| Pattern | Convention |
-|---|---|
-| `*.test.ts` / `*.test.tsx` | Co-located test files |
-| `*.spec.ts` / `*.spec.tsx` | Co-located spec files |
-| `__tests__/` directory | Grouped test directory |
-
-Match whatever the project already uses. Don't introduce a second convention.
-
-## Output
-
-After detection, you should know:
-- **Runner:** Jest / Vitest / other
-- **Test utils:** Which @testing-library packages
-- **Framework:** React / Solid / Vue / Svelte
-- **Coverage:** Configured or not, which provider
-- **Package manager:** npm / yarn / pnpm / bun
-- **CI:** What runs, what doesn't
-- **Test file pattern:** `*.test.*`, `*.spec.*`, or `__tests__/`
-
-Use this to adapt all test code to match the project's existing conventions.
+Surfacing these is more useful than silently picking a default.
