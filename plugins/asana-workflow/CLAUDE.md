@@ -16,7 +16,6 @@ asana-workflow/
     ├── generic-qa/        ← Shared QA process & references (not a skill — used by web-qa, mobile-qa)
     ├── frontend-testing/  ← Frontend testing patterns & infrastructure (bundled)
     ├── generic-testing/   ← Shared testing fundamentals & references (not a skill — used by platform-specific testing skills)
-    ├── web-qa/            ← Web QA investigation & verification (bundled)
     ├── log-task/          ← Create Asana task from conversation-discovered work (bundled)
     ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, mobile-mcp)
     ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
