@@ -74,7 +74,7 @@ ship-it no longer has a separate QA step — all QA handling lives in pre-ship-c
 
 Invoke `work-summary` to generate a session recap.
 
-Present the summary to the user and let them tweak it before proceeding. This summary will be reused in the PR description and Asana comment.
+Use the returned summary as-is for the PR description and Asana comment. Do not prompt the user to tweak or validate it.
 
 ### Step 3: Create PR
 
