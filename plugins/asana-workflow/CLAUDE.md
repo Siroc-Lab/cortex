@@ -14,6 +14,8 @@ asana-workflow/
     ├── fix-bug/           ← Bug-fix lifecycle orchestrator (bundled)
     ├── git-check/         ← Git state validation (bundled)
     ├── generic-qa/        ← Shared QA process & references (not a skill — used by web-qa, mobile-qa)
+    ├── frontend-testing/  ← Frontend testing patterns & infrastructure (bundled)
+    ├── generic-testing/   ← Shared testing fundamentals & references (not a skill — used by platform-specific testing skills)
     ├── log-task/          ← Create Asana task from conversation-discovered work (bundled)
     ├── mobile-qa/         ← Mobile QA investigation & verification (bundled, mobile-mcp)
     ├── pre-ship-check/    ← Readiness gate before shipping (bundled)
@@ -64,6 +66,17 @@ web-qa (extends generic-qa)
 
 mobile-qa (extends generic-qa, mobile-mcp)
   └── references/        (mobile-mcp tooling, app+device discovery, accessibility tree/gestures/logs)
+
+generic-testing (shared markdown, not a skill — universal fundamentals)
+  ├── process.md         (the 10 non-negotiables: determinism, behavior-over-implementation, AAA, etc.)
+  └── references/
+      └── infrastructure.md     (CI pipeline, flake detection, benchmarks, reporting — stack-agnostic)
+
+frontend-testing (bundled skill — extends generic-testing)
+  ├── process.md         (Testing Library, component patterns, mocking boundaries, E2E)
+  └── references/
+      ├── stack-detection.md    (detect frontend runner, framework, coverage, package manager)
+      └── infrastructure.md     (Jest/Vitest coverage configs, frontend CI pipeline)
 
 ## External Dependencies
 
