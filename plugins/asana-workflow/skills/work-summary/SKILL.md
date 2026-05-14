@@ -135,10 +135,9 @@ streams CSV.
 
 1. **Gather context** — Run git commands and review conversation history.
 2. **Draft the summary** — Write the body and footer following the format above.
-3. **Present to user** — Show the summary and ask if they want to adjust anything.
-4. **Finalize** — Apply requested changes and return the final result.
+3. **Return the result** — Output the summary. Do not ask the user to validate it.
 
-Do not ask clarifying questions before producing the first draft — use available context to write the best summary possible, then let the user refine it. Bias toward action.
+Do not ask clarifying questions before producing the summary — use available context to write the best summary possible and return it. Bias toward action.
 
 ## Integration with Other Skills
 
@@ -148,4 +147,4 @@ This skill produces output that other skills consume:
 - **create-pr** — Uses the body for the PR description.
 - **asana-api** — Uses the full output as a task comment.
 
-When called by another skill, return the structured output so the caller can extract what it needs. When called standalone, present the full formatted output directly to the user.
+When called by another skill, return the structured output so the caller can extract what it needs. When called standalone, present the full formatted output directly to the user. In both cases, do not prompt the user to validate or adjust the summary.
