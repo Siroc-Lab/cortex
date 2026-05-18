@@ -109,7 +109,24 @@ Present the choice:
 > - **Worktree** _(recommended for parallel work — keeps main directory clean)_
 > - **Current directory**
 
-If the user chooses worktree, use `EnterWorktree` to create an isolated copy. The branch will be created inside the worktree in Step 7.
+If the user chooses worktree, use `EnterWorktree` to create an isolated copy. Then run project setup inside the worktree:
+
+```bash
+# Node.js — detect package manager from lockfile
+if [ -f package.json ]; then
+  if [ -f pnpm-lock.yaml ] || [ -f pnpm-workspace.yaml ]; then pnpm install
+  elif [ -f yarn.lock ]; then yarn install
+  else npm install
+  fi
+fi
+
+if [ -f Cargo.toml ]; then cargo build; fi
+if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+if [ -f pyproject.toml ]; then poetry install; fi
+if [ -f go.mod ]; then go mod download; fi
+```
+
+The branch will be created inside the worktree in Step 7.
 
 ### Step 6b: Confirm Base Branch (BLOCKING)
 
