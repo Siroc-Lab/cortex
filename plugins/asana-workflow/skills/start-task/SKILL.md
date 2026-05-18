@@ -93,6 +93,8 @@ Fetch subtasks via the `asana-api` skill. Group by status (incomplete = remainin
 
 Fetch task stories and filter for comments. List attachments by name, noting any images (mockups, screenshots). See **`references/asana-patterns.md`** for details.
 
+Also scan the task description and comments for links to external tools (design files, documents, specs, etc.). For each link found, invoke the appropriate MCP or tool to fetch its content and include it in the context bundle passed to the downstream skill in Step 10.
+
 ### Step 6: Check for Existing Work
 
 Before creating a branch, check if work already exists for this task ID. See **`references/git-workflow.md`** for the detection commands.
@@ -166,7 +168,7 @@ Post a start comment on the task with the branch name and draft PR URL. Deduplic
 
 ### Step 10: Route to the Right Workflow
 
-Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, branch name) and route based on **Category** custom field:
+Compile full task context (name, notes, custom fields, task ID, subtasks, comments, attachments, fetched external resource content from Step 5, branch name) and route based on **Category** custom field:
 
 **If `fast_mode`** — skip all skill routing regardless of category. Implement the solution directly in this conversation using built-in tools (Read, Edit, Bash, Grep, etc.). Do not invoke `feature-dev`, `brainstorming`, `fix-bug`, or any QA skill. Skip Step 11 (QA sub-flow) entirely and proceed to Step 12 when done.
 
